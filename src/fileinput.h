@@ -72,6 +72,7 @@ static inline void fileinput_close(fileinput_t *in)
 {
   if(in->data) munmap(in->data, in->data_size);
   if(in->fd > 2) close(in->fd);
+  in->fd = -1;
 }
 
 /* open input file via mmap, to not consume any memory if we don't need it. */
@@ -116,6 +117,8 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
  * this needs to be extremely efficient to allow for video playback. */
 static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *c, uint8_t *buf)
 {
+  // skip dead frames
+  if(in->fd < 0) return 1;
   const float scalex = 1.0f/c->roi.scale;
   const float scaley = 1.0f/c->roi.scale;
   int32_t ix2 = MAX(c->roi.x, 0);

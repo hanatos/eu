@@ -17,7 +17,7 @@
   #include <xmmintrin.h>
 #endif
 
-#define keyMapSize 256
+#define keyMapSize 320
 
 keycode_t normalKeys[keyMapSize];
 // keycode_t functionKeys[keyMapSize];
@@ -104,6 +104,10 @@ int initializeKeyMaps()
   normalKeys[SDLK_x] = KeyX;
   normalKeys[SDLK_y] = KeyY;
   normalKeys[SDLK_z] = KeyZ;
+  normalKeys[SDLK_DOWN] = KeyDown;
+  normalKeys[SDLK_RIGHT] = KeyRight;
+  normalKeys[SDLK_UP] = KeyUp;
+  normalKeys[SDLK_LEFT] = KeyLeft;
   normalKeys[SDLK_LEFTBRACKET] = KeyOpenBracket;
   normalKeys[SDLK_BACKSLASH] = KeyBackSlash;
   normalKeys[SDLK_RIGHTBRACKET] = KeyCloseBracket;
@@ -402,6 +406,11 @@ render_message_out:
 
   SDL_GL_SwapBuffers();
   return 1;
+}
+
+void display_title(display_t *d, const char *title)
+{
+  SDL_WM_SetCaption(title, NULL);
 }
 
 void display_print(display_t *d, const int px, const int py, const char *msg, ...)

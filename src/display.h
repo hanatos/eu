@@ -31,3 +31,4 @@ int display_pump_events(display_t *d);
 int display_wait_event(display_t *d);
 void display_print(display_t *d, const int px, const int py, const char* msg, ...);
 static inline void display_print_usage() {}
+void display_title(display_t *d, const char *title);

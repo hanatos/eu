@@ -15,7 +15,9 @@
 typedef struct eu_t
 {
   display_t *display;
-  fileinput_t file;
+  int num_files;
+  int current_file;
+  fileinput_t *file;
   fileinput_conversion_t conv;
 
   uint8_t *pixels;
@@ -24,15 +26,13 @@ typedef struct eu_t
 }
 eu_t;
 
-static inline void eu_init(eu_t *eu, const char *title, int wd, int ht)
+static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 {
-  eu->display = display_open(title, wd, ht);
+  eu->display = display_open(PROG_NAME, wd, ht);
 
   // default input to display conversion:
   eu->conv.roi.x = 0;
   eu->conv.roi.y = 0;
-  eu->conv.roi.w = fileinput_width(&eu->file);
-  eu->conv.roi.h = fileinput_height(&eu->file);
   eu->conv.roi.scale = 1.0f;
   eu->conv.roi_out.x = 0;
   eu->conv.roi_out.y = 0;
@@ -44,13 +44,31 @@ static inline void eu_init(eu_t *eu, const char *title, int wd, int ht)
   eu->conv.curve = s_none;
   eu->conv.channels = s_rgb;
 
+  eu->num_files = argc-1;
+  eu->file = (fileinput_t *)aligned_alloc(16, (argc-1)*sizeof(fileinput_t));
+  for(int k=1;k<argc;k++)
+  {
+    if(fileinput_open(eu->file+k-1, arg[k]))
+    {
+      // TODO: just go on with empty frames!
+      fprintf(stderr, "[eu_init] could not open file `%s'\n", arg[k]);
+    }
+  }
+
+  // use dimensions of first file
+  eu->conv.roi.w = fileinput_width(eu->file);
+  eu->conv.roi.h = fileinput_height(eu->file);
+  eu->current_file = 0;
+
   eu->pixels = (uint8_t *)aligned_alloc(16, wd*ht*3);
 }
 
 static inline void eu_cleanup(eu_t *eu)
 {
-  fileinput_close(&eu->file);
+  for(int k=0;k<eu->num_files;k++)
+    fileinput_close(eu->file+k);
   display_close(eu->display);
   free(eu->pixels);
+  free(eu->file);
 }
 

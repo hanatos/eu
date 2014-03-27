@@ -4,8 +4,8 @@ eu_t eu;
 
 static inline void pointer_to_image(float *x, float *y)
 {
-  *x = (eu.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x;
-  *y = (eu.pointer.y - eu.conv.roi_out.y) / eu.conv.roi.scale + eu.conv.roi.y;
+  *x = CLAMP((eu.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x, 0, eu.conv.roi.w-1);
+  *y = CLAMP(eu.conv.roi.h - ((eu.pointer.y - eu.conv.roi_out.y) / eu.conv.roi.scale + eu.conv.roi.y) - 1, 0, eu.conv.roi.h);
 }
 
 static inline void offset_image(float x, float y)
@@ -17,6 +17,7 @@ static inline void offset_image(float x, float y)
 
 void onKeyDown(keycode_t key)
 {
+  char title[256];
   float x, y;
   pointer_to_image(&x, &y);
   switch(key)
@@ -29,13 +30,13 @@ void onKeyDown(keycode_t key)
       offset_image(x, y);
       break;
     case KeyTwo: // scale to fit
-      eu.conv.roi.scale = fminf(eu.display->width/(float)fileinput_width(&eu.file),
-          eu.display->height/(float)fileinput_height(&eu.file));
+      eu.conv.roi.scale = fminf(eu.display->width/(float)fileinput_width(eu.file+eu.current_file),
+          eu.display->height/(float)fileinput_height(eu.file+eu.current_file));
       eu.conv.roi.x = eu.conv.roi.y = 0;
       break;
     case KeyThree: // scale to fill
-      eu.conv.roi.scale = fmaxf(eu.display->width/(float)fileinput_width(&eu.file),
-          eu.display->height/(float)fileinput_height(&eu.file));
+      eu.conv.roi.scale = fmaxf(eu.display->width/(float)fileinput_width(eu.file+eu.current_file),
+          eu.display->height/(float)fileinput_height(eu.file+eu.current_file));
       eu.conv.roi.x = eu.conv.roi.y = 0;
       break;
     case KeyR: // red channel
@@ -59,6 +60,18 @@ void onKeyDown(keycode_t key)
     case KeyC: // all color channels
       eu.conv.channels = s_rgb;
       break;
+    case KeyDown:
+    case KeyRight:
+      if(eu.current_file < eu.num_files-1) eu.current_file++;
+      snprintf(title, 256, "frame %04d", eu.current_file);
+      display_title(eu.display, title);
+      break;
+    case KeyLeft:
+    case KeyUp:
+      if(eu.current_file > 0) eu.current_file--;
+      snprintf(title, 256, "frame %04d", eu.current_file);
+      display_title(eu.display, title);
+      break;
     default:
       break;
   }
@@ -79,21 +92,16 @@ void onMouseMove(mouse_t *mouse)
 
 int main(int argc, char *arg[])
 {
-  const int wd = 1024, ht = 576;
-  eu_init(&eu, "viewer", wd, ht);
-  eu.display->onKeyDown = onKeyDown;
-  eu.display->onMouseMove = onMouseMove;
-
   if(argc < 2)
   {
     fprintf(stderr, "["PROG_NAME"] no input files, stop.\n");
     exit(1);
   }
-  if(fileinput_open(&eu.file, arg[1]))
-  {
-    fprintf(stderr, "["PROG_NAME"] could not open file `%s'\n", arg[1]);
-    exit(2);
-  }
+
+  const int wd = 1024, ht = 576;
+  eu_init(&eu, wd, ht, argc, arg);
+  eu.display->onKeyDown = onKeyDown;
+  eu.display->onMouseMove = onMouseMove;
 
   while(1)
   {
@@ -103,7 +111,7 @@ int main(int argc, char *arg[])
     if(ret)
     {
       // update buffer from out-of-core storage
-      fileinput_grab(&eu.file, &eu.conv, eu.pixels);
+      fileinput_grab(eu.file+eu.current_file, &eu.conv, eu.pixels);
       // show on screen
       display_update(eu.display, eu.pixels);
     }
