@@ -1,27 +1,5 @@
+#include "eu.h"
 
-#include "fileinput.h"
-#include "display.h"
-
-#include <stdlib.h>
-#include <math.h>
-
-
-// fastest to type while the right hand is on the mouse, copy/pasting the file name.
-// this is true on a dvorak keyboard, where these are on the left homerow, middle + index fingers:
-#define PROG_NAME "eu"
-
-
-typedef struct eu_t
-{
-  display_t *display;
-  fileinput_t file;
-  fileinput_conversion_t conv;
-
-  mouse_t pointer;
-}
-eu_t;
-
-// global state:
 eu_t eu;
 
 static inline void pointer_to_image(float *x, float *y)
@@ -102,7 +80,7 @@ void onMouseMove(mouse_t *mouse)
 int main(int argc, char *arg[])
 {
   const int wd = 1024, ht = 576;
-  eu.display = display_open("viewer", wd, ht);
+  eu_init(&eu, "viewer", wd, ht);
   eu.display->onKeyDown = onKeyDown;
   eu.display->onMouseMove = onMouseMove;
 
@@ -117,23 +95,6 @@ int main(int argc, char *arg[])
     exit(2);
   }
 
-  eu.conv.roi.x = 0;
-  eu.conv.roi.y = 0;
-  eu.conv.roi.w = fileinput_width(&eu.file);
-  eu.conv.roi.h = fileinput_height(&eu.file);
-  eu.conv.roi.scale = 1.0f;
-  eu.conv.roi_out.x = 0;
-  eu.conv.roi_out.y = 0;
-  eu.conv.roi_out.w = wd;
-  eu.conv.roi_out.h = ht;
-  eu.conv.roi_out.scale = 0.0f; // not used, invalidate
-  eu.conv.colorin = s_passthrough;
-  eu.conv.colorout = s_passthrough;
-  eu.conv.curve = s_none;
-  eu.conv.channels = s_rgb;
-
-  uint8_t *pixels = (uint8_t *)aligned_alloc(16, wd*ht*3);
-
   while(1)
   {
     // get user input, wait for it if need be.
@@ -142,15 +103,13 @@ int main(int argc, char *arg[])
     if(ret)
     {
       // update buffer from out-of-core storage
-      fileinput_grab(&eu.file, &eu.conv, pixels);
+      fileinput_grab(&eu.file, &eu.conv, eu.pixels);
       // show on screen
-      display_update(eu.display, pixels);
+      display_update(eu.display, eu.pixels);
     }
   }
 
-  fileinput_close(&eu.file);
-  display_close(eu.display);
-  free(pixels);
+  eu_cleanup(&eu);
 
   exit(0);
 }
