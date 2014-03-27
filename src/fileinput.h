@@ -1,5 +1,8 @@
 #pragma once
+#include "transform.h"
+
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,6 +13,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#define MAX(A, B) ((A) < (B) ? (B) : (A))
+#define MIN(A, B) ((A) > (B) ? (B) : (A))
+
 
 typedef struct fileinput_roi_t
 {
@@ -18,42 +24,16 @@ typedef struct fileinput_roi_t
 }
 fileinput_roi_t;
 
-typedef enum fileinput_channels_t
-{
-  s_red = 1,
-  s_green = 2,
-  s_blue = 4,
-  s_rgb = s_red | s_green | s_blue,
-}
-fileinput_channels_t;
-
-typedef enum fileinput_color_t
-{
-  s_passthrough,   // don't do any colorspace conversion
-  s_xyz,           // linear xyz illum E (not d50, straight 1931 cmf)
-  s_rec709,        // rec709 rgb primaries, linear
-  s_srgb,          // rec709 D65 + linear toe slope gamma table
-  s_adobergb,      // adobergb primaries + gamma
-  s_custom,        // convert using custom code (put your display profile matrix there)
-}
-fileinput_color_t;
-
-typedef enum fileinput_curve_t
-{
-  s_none,          // straight output of colorout space
-  s_canon,         // measured canon 5DII contrast curve
-}
-fileinput_curve_t;
-
 /* descriptor of all necessary conversions to convert to screen output. */
 typedef struct fileinput_conversion_t
 {
   float exposure;                  // stop the image up or down
-  fileinput_channels_t channels;   // display only those channels
-  fileinput_color_t    colorin;    // input color space description
-  fileinput_color_t    colorout;   // desired output color space description
-  fileinput_curve_t    curve;      // extra contrast curve for cinematic look or hdr compression.
+  transform_channels_t channels;   // display only those channels
+  transform_color_t    colorin;    // input color space description
+  transform_color_t    colorout;   // desired output color space description
+  transform_curve_t    curve;      // extra contrast curve for cinematic look or hdr compression.
   fileinput_roi_t      roi;        // region of interest. first scale input, then crop to int bounds
+  fileinput_roi_t      roi_out;    // output buffer description
 }
 fileinput_conversion_t;
 
@@ -75,6 +55,17 @@ typedef struct fileinput_t
   fileinput_pfm_t pfm; // only supported format so far
 }
 fileinput_t;
+
+/* wrappers to get dimensions, for future format extension. */
+static inline int fileinput_width(fileinput_t *in)
+{
+  return in->pfm.width;
+}
+
+static inline int fileinput_height(fileinput_t *in)
+{
+  return in->pfm.height;
+}
 
 /* unmap the file. */
 static inline void fileinput_close(fileinput_t *in)
@@ -125,6 +116,74 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
  * this needs to be extremely efficient to allow for video playback. */
 static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *c, uint8_t *buf)
 {
+  const float scalex = 1.0f/c->roi.scale;
+  const float scaley = 1.0f/c->roi.scale;
+  int32_t ix2 = MAX(c->roi.x, 0);
+  int32_t iy2 = MAX(c->roi.y, 0);
+  int32_t ibw = in->pfm.width, ibh = in->pfm.height;
+  int32_t obw = c->roi_out.w, obh = c->roi_out.h;
+  int32_t ow = c->roi_out.w, oh = c->roi_out.h;
+  int32_t ox2 = MAX(0, (c->roi_out.w-in->pfm.width*c->roi.scale)*.5f);
+  int32_t oy2 = MAX(0, (c->roi_out.h-in->pfm.height*c->roi.scale)*.5f);
+  int32_t oh2 = MIN(MIN(oh, (ibh - iy2)/scaley), obh - oy2);
+  int32_t ow2 = MIN(MIN(ow, (ibw - ix2)/scalex), obw - ox2);
+  assert((int)(ix2 + ow2*scalex) <= ibw);
+  assert((int)(iy2 + oh2*scaley) <= ibh);
+  assert(ox2 + ow2 <= obw);
+  assert(oy2 + oh2 <= obh);
+  assert(ix2 >= 0 && iy2 >= 0 && ox2 >= 0 && oy2 >= 0);
+  float x = ix2, y = iy2;
+
+  const float f = powf(2.0f, c->exposure);
+
+  // TODO parallel
+  // fill top/bottom borders:
+  for(int j=0;j<oy2;j++) memset(buf + 3*j*obw, 0, 3*obw);
+  for(int j=oy2+oh2;j<obh;j++) memset(buf + 3*j*obw, 0, 3*obw);
+  for(int s=0; s<oh2; s++)
+  {
+    // fill left/right borders
+    for(int t=0;t<3*ox2;t++) buf[3*obw*(oy2+s)+t] = 0.0f;
+    for(int t=3*(ow2+ox2);t<3*obw;t++) buf[3*obw*(oy2+s)+t] = 0.0f;
+
+    int idx = ox2 + obw*(oy2+s);
+    for(int t=0; t<ow2; t++)
+    {
+      // TODO: clamp x y
+      // for(int k=0; k<3; k++) buf[3*idx + k] = //255.0f*in->pfm.pixel[3*(ibw*(int)y + (int)x) + k];
+      //  CLAMP((in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x + .5f*scalex)) + k] +
+      //         in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x + .5f*scalex)) + k] +
+      //         in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x             )) + k] +
+      //         in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x             )) + k])*64.0f, 0, 255);
+      // TODO: get input as float triple, then:
+      float tmp[3];
+      for(int k=0; k<3; k++) tmp[k] = //255.0f*in->pfm.pixel[3*(ibw*(int)y + (int)x) + k];
+      (in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x + .5f*scalex)) + k] +
+       in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x + .5f*scalex)) + k] +
+       in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x             )) + k] +
+       in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x             )) + k])*.25f;
+
+      // float exposure; adjust exposure
+      transform_exposure(tmp, f);
+
+      // color conversion:
+      // fileinput_color_t    colorin;    // input color space description
+      // fileinput_color_t    colorout;   // desired output color space description
+
+      // apply curve
+      transform_curve(tmp, buf+3*idx, c->curve);
+
+      // zero out channels
+      transform_channels(buf+3*idx, c->channels);
+
+      x += scalex;
+      idx++;
+    }
+    y += scaley;
+    x = ix2;
+  }
+
+#if 0
   // XXX this is rubbish, not feature complete, and needs to be optimized a lot!
   for(int j=0;j<c->roi.h;j++)
   {
@@ -134,6 +193,7 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
         buf[3*(j*c->roi.w + i) + k] = 255.0 * in->pfm.pixel[3*(j*in->pfm.width + i) + k];
     }
   }
+#endif
   return 0;
 }
 

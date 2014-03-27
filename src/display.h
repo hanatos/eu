@@ -17,10 +17,9 @@ typedef struct display_t
   void (*onKeyDown)(keycode_t);
   void (*onKeyPressed)(keycode_t);
   void (*onKeyUp)(keycode_t);
-  void (*onMouseButtonUp)(mouse_t);
-  void (*onMouseButtonDown)(mouse_t);
-  void (*onMouseMove)(mouse_t);
-  void (*onActivate)(char);
+  void (*onMouseButtonUp)(mouse_t*);
+  void (*onMouseButtonDown)(mouse_t*);
+  void (*onMouseMove)(mouse_t*);
   void (*onClose)();
 }
 display_t;

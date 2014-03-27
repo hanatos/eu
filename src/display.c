@@ -124,7 +124,6 @@ display_t *display_open(const char title[], int width, int height)
   d->onMouseButtonUp = NULL;
   d->onMouseButtonDown = NULL;
   d->onMouseMove = NULL;
-  d->onActivate = NULL;
   d->onClose = NULL;
   d->msg[0] = '\0';
   d->msg_len = 0;
@@ -223,7 +222,7 @@ void display_close(display_t *d)
   free(d);
 }
 
-void handleEvent(const SDL_Event *event, display_t *d)
+int handleEvent(const SDL_Event *event, display_t *d)
 {
   switch (event->type)
   {
@@ -237,17 +236,17 @@ void handleEvent(const SDL_Event *event, display_t *d)
       }
       else if(keysym < keyMapSize && d->onKeyDown) d->onKeyDown(normalKeys[keysym]);
       }
-      break;
+      return 1;
     case SDL_KEYUP:
       {
       const SDLKey keysym = event->key.keysym.sym;
       if(keysym < keyMapSize && d->onKeyUp) d->onKeyUp(normalKeys[keysym]);
       }
-      break;
+      return 1;
     case SDL_QUIT:
       d->isShuttingDown = 1;
       if(d->onClose) d->onClose();
-      break;
+      return 1;
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
       {
@@ -259,10 +258,10 @@ void handleEvent(const SDL_Event *event, display_t *d)
         mouse.buttons.right  = event->button.button & SDL_BUTTON_RIGHT;
         if (event->type == SDL_MOUSEBUTTONDOWN)
         {
-          if (d->onMouseButtonDown) d->onMouseButtonDown(mouse);
+          if (d->onMouseButtonDown) d->onMouseButtonDown(&mouse);
         }
-        else if (d->onMouseButtonUp) d->onMouseButtonUp(mouse);
-        break;
+        else if (d->onMouseButtonUp) d->onMouseButtonUp(&mouse);
+        return 1;
       }
     case SDL_MOUSEMOTION:
       {
@@ -272,10 +271,11 @@ void handleEvent(const SDL_Event *event, display_t *d)
         mouse.buttons.left   = event->button.button & SDL_BUTTON_LEFT;
         mouse.buttons.middle = event->button.button & SDL_BUTTON_MIDDLE;
         mouse.buttons.right  = event->button.button & SDL_BUTTON_RIGHT;
-        if (d->onMouseMove) d->onMouseMove(mouse);
-        break;
+        if (d->onMouseMove) d->onMouseMove(&mouse);
+        return 0;
       }
   }
+  return 1;
 }
 
 int display_pump_events(display_t *d)
@@ -288,8 +288,11 @@ int display_pump_events(display_t *d)
 int display_wait_event(display_t *d)
 {
   SDL_Event event;
-  if(SDL_WaitEvent(&event)) handleEvent(&event, d);
-  return d->isShuttingDown;
+  // classify mouse move events to not trigger redraw
+  int ret = 0;
+  if(SDL_WaitEvent(&event)) ret = handleEvent(&event, d);
+  if(d->isShuttingDown) return -1;
+  return ret;
 }
 
 void convert_3(unsigned char* restrict bbuf, const float* restrict fbuf, int size)
