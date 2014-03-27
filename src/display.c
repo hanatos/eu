@@ -371,10 +371,10 @@ render_message_out:
 #if 1//def TEXTURE
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, d->width, d->height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
   glBegin(GL_QUADS);
-  glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, -1.0, 0.0);
-  glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, 1.0, 0.0);
-  glTexCoord2f(1.0, 0.0); glVertex3f(1.0, 1.0, 0.0);
-  glTexCoord2f(1.0, 1.0); glVertex3f(1.0, -1.0, 0.0);
+  glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, 0.0);
+  glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, 1.0, 0.0);
+  glTexCoord2f(1.0, 1.0); glVertex3f(1.0, 1.0, 0.0);
+  glTexCoord2f(1.0, 0.0); glVertex3f(1.0, -1.0, 0.0);
   glEnd();
 #endif
 
