@@ -24,41 +24,62 @@ eu_t;
 // global state:
 eu_t eu;
 
+static inline void pointer_to_image(float *x, float *y)
+{
+  *x = (eu.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x;
+  *y = (eu.pointer.y - eu.conv.roi_out.y) / eu.conv.roi.scale + eu.conv.roi.y;
+}
+
+static inline void offset_image(float x, float y)
+{
+  // center image roi around given x and y in image coordinates
+  eu.conv.roi.x = MAX(0, x - eu.conv.roi_out.w/(eu.conv.roi.scale * 2));
+  eu.conv.roi.y = MAX(0, y - eu.conv.roi_out.h/(eu.conv.roi.scale * 2));
+}
+
 void onKeyDown(keycode_t key)
 {
+  float x, y;
+  pointer_to_image(&x, &y);
   switch(key)
   {
-    case KeyOne:
+    case KeyOne: // toggle 1:1 and 1:2
       if(eu.conv.roi.scale == 1.0f)
         eu.conv.roi.scale = 2.0f;
       else 
         eu.conv.roi.scale = 1.0f;
+      offset_image(x, y);
       break;
-    case KeyTwo:
+    case KeyTwo: // scale to fit
       eu.conv.roi.scale = fminf(eu.display->width/(float)fileinput_width(&eu.file),
           eu.display->height/(float)fileinput_height(&eu.file));
+      eu.conv.roi.x = eu.conv.roi.y = 0;
       break;
-    case KeyThree:
+    case KeyThree: // scale to fill
       eu.conv.roi.scale = fmaxf(eu.display->width/(float)fileinput_width(&eu.file),
           eu.display->height/(float)fileinput_height(&eu.file));
+      eu.conv.roi.x = eu.conv.roi.y = 0;
       break;
-    case KeyR:
+    case KeyR: // red channel
       if(eu.conv.channels == s_red)
         eu.conv.channels = s_rgb;
       else
         eu.conv.channels = s_red;
       break;
-    case KeyG:
+    case KeyG: // green channel
       if(eu.conv.channels == s_green)
         eu.conv.channels = s_rgb;
       else
         eu.conv.channels = s_green;
       break;
-    case KeyB:
+    case KeyB: // blue channel
       if(eu.conv.channels == s_blue)
         eu.conv.channels = s_rgb;
       else
         eu.conv.channels = s_blue;
+      break;
+    case KeyC: // all color channels
+      eu.conv.channels = s_rgb;
       break;
     default:
       break;
