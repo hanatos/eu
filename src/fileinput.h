@@ -1,6 +1,7 @@
 #pragma once
 #include <assert.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -10,7 +11,7 @@
 #include <fcntl.h>
 
 
-typedef enum fileinput_roi_t
+typedef struct fileinput_roi_t
 {
   float scale;
   int x, y, w, h;
@@ -35,7 +36,7 @@ typedef enum fileinput_color_t
   s_adobergb,      // adobergb primaries + gamma
   s_custom,        // convert using custom code (put your display profile matrix there)
 }
-fileinput_colorout_t;
+fileinput_color_t;
 
 typedef enum fileinput_curve_t
 {
@@ -75,6 +76,12 @@ typedef struct fileinput_t
 }
 fileinput_t;
 
+/* unmap the file. */
+static inline void fileinput_close(fileinput_t *in)
+{
+  if(in->data) munmap(in->data, in->data_size);
+  if(in->fd > 2) close(in->fd);
+}
 
 /* open input file via mmap, to not consume any memory if we don't need it. */
 static inline int fileinput_open(fileinput_t *in, const char *filename)
@@ -98,15 +105,15 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
   in->pfm.width = strtol(in->data+3, &endptr, 10);
   in->pfm.height = strtol(endptr, &endptr, 10);
   endptr++; // remove newline
-  while(endptr < in->data + 100 && *endptr != '\n') endptr++;
-  in->pfm.pixels = (float*)(++endptr); // remove second newline
+  while(endptr < (char *)in->data + 100 && *endptr != '\n') endptr++;
+  in->pfm.pixel = (float*)(++endptr); // remove second newline
 
   // TODO: check alignment of float pointer!
   // TODO: while writing make sure the pixel data is 16-byte aligned for sse.
   // TODO: achieve this by padding up the idiotic scale factor line in the header.
 
   // sanity check:
-  if(in->pfm.width*in->pfm.height*3*sizeof(float) > in->data_size - (endptr - in->data))
+  if(in->pfm.width*in->pfm.height*3*sizeof(float) > in->data_size - (endptr - (char *)in->data))
   {
     fileinput_close(in);
     return 3;
@@ -124,27 +131,21 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
     for(int i=0;i<c->roi.w;i++)
     {
       for(int k=0;k<3;k++)
-        buf[4*(j*c->roi.w + i) + k] = 255.0 * in->pfm.pixel[3*(j*c->pfm.width + i) + k]
+        buf[3*(j*c->roi.w + i) + k] = 255.0 * in->pfm.pixel[3*(j*in->pfm.width + i) + k];
     }
   }
+  return 0;
 }
 
 /* prefetches the input buffer by instructing the kernel that we'll soon need it. */
 static inline void fileinput_prefetch(fileinput_t *in)
 {
-  return madvise(in->data, in->data_size, MADV_WILLNEED);
+  madvise(in->data, in->data_size, MADV_WILLNEED);
 }
 
 /* instructs the kernel that we're done for now. */
 static inline void fileinput_dontneed(fileinput_t *in)
 {
-  return madvise(in->data, in->data_size, MADV_DONTNEED);
-}
-
-/* unmap the file. */
-static inline void fileinput_close(fileinput_t *in)
-{
-  if(in->data) munmap(in->data, in->data_size);
-  if(in->fd > 2) close(in->fd);
+  madvise(in->data, in->data_size, MADV_DONTNEED);
 }
 
