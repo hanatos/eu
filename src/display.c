@@ -228,6 +228,7 @@ void display_close(display_t *d)
 
 int handleEvent(const SDL_Event *event, display_t *d)
 {
+  int ret = 0;
   switch (event->type)
   {
     case SDL_KEYDOWN:
@@ -236,21 +237,21 @@ int handleEvent(const SDL_Event *event, display_t *d)
       if(keysym == SDLK_ESCAPE)
       {
         d->isShuttingDown = 1;
-        if(d->onClose) d->onClose();
+        if(d->onClose) ret = d->onClose();
       }
-      else if(keysym < keyMapSize && d->onKeyDown) d->onKeyDown(normalKeys[keysym]);
+      else if(keysym < keyMapSize && d->onKeyDown) ret = d->onKeyDown(normalKeys[keysym]);
       }
-      return 1;
+      return ret;
     case SDL_KEYUP:
       {
       const SDLKey keysym = event->key.keysym.sym;
-      if(keysym < keyMapSize && d->onKeyUp) d->onKeyUp(normalKeys[keysym]);
+      if(keysym < keyMapSize && d->onKeyUp) ret = d->onKeyUp(normalKeys[keysym]);
       }
-      return 1;
+      return ret;
     case SDL_QUIT:
       d->isShuttingDown = 1;
       if(d->onClose) d->onClose();
-      return 1;
+      return ret;
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
       {
@@ -262,10 +263,10 @@ int handleEvent(const SDL_Event *event, display_t *d)
         mouse.buttons.right  = event->button.button & SDL_BUTTON_RIGHT;
         if (event->type == SDL_MOUSEBUTTONDOWN)
         {
-          if (d->onMouseButtonDown) d->onMouseButtonDown(&mouse);
+          if (d->onMouseButtonDown) ret = d->onMouseButtonDown(&mouse);
         }
-        else if (d->onMouseButtonUp) d->onMouseButtonUp(&mouse);
-        return 1;
+        else if (d->onMouseButtonUp) ret = d->onMouseButtonUp(&mouse);
+        return ret;
       }
     case SDL_MOUSEMOTION:
       {
@@ -275,11 +276,11 @@ int handleEvent(const SDL_Event *event, display_t *d)
         mouse.buttons.left   = event->button.button & SDL_BUTTON_LEFT;
         mouse.buttons.middle = event->button.button & SDL_BUTTON_MIDDLE;
         mouse.buttons.right  = event->button.button & SDL_BUTTON_RIGHT;
-        if (d->onMouseMove) d->onMouseMove(&mouse);
-        return 0;
+        if (d->onMouseMove) ret = d->onMouseMove(&mouse);
+        return ret;
       }
   }
-  return 1;
+  return ret;
 }
 
 int display_pump_events(display_t *d)

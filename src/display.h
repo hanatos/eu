@@ -14,13 +14,14 @@ typedef struct display_t
   int msg_len;
   int msg_x, msg_y;
 
-  void (*onKeyDown)(keycode_t);
-  void (*onKeyPressed)(keycode_t);
-  void (*onKeyUp)(keycode_t);
-  void (*onMouseButtonUp)(mouse_t*);
-  void (*onMouseButtonDown)(mouse_t*);
-  void (*onMouseMove)(mouse_t*);
-  void (*onClose)();
+  // return value: 0 nothing 1 redraw -1 quit
+  int (*onKeyDown)(keycode_t);
+  int (*onKeyPressed)(keycode_t);
+  int (*onKeyUp)(keycode_t);
+  int (*onMouseButtonUp)(mouse_t*);
+  int (*onMouseButtonDown)(mouse_t*);
+  int (*onMouseMove)(mouse_t*);
+  int (*onClose)();
 }
 display_t;
 
