@@ -39,6 +39,7 @@ int onKeyDown(keycode_t key)
           eu.display->height/(float)fileinput_height(eu.file+eu.current_file));
       eu.conv.roi.x = eu.conv.roi.y = 0;
       return 1;
+
     case KeyR: // red channel
       if(eu.conv.channels == s_red)
         eu.conv.channels = s_rgb;
@@ -60,6 +61,7 @@ int onKeyDown(keycode_t key)
     case KeyC: // all color channels
       eu.conv.channels = s_rgb;
       return 1;
+
     case KeyDown:
     case KeyRight:
       if(eu.current_file < eu.num_files-1)
@@ -80,6 +82,23 @@ int onKeyDown(keycode_t key)
         return 1;
       }
       return 0;
+
+    case KeyE:
+      eu.gui_state = 2;
+      return 0;
+
+    case KeyZero:
+      if(eu.gui_state == 2)
+      {
+        eu.conv.exposure = 0.0f;
+        eu.gui_state = 0;
+        return 1;
+      }
+      return 0;
+
+    case KeyQ:
+      return -1;
+
     default:
       return 0;
   }
@@ -90,15 +109,23 @@ int onMouseButtonDown(mouse_t *mouse)
   eu.pointer = eu.pointer_button = *mouse;
   eu.gui_x_button = eu.conv.roi.x;
   eu.gui_y_button = eu.conv.roi.y;
-  eu.gui_state = 1;
+  if(eu.gui_state == 0)
+    eu.gui_state = 1;
   return 0;
 }
 
 int onMouseButtonUp(mouse_t *mouse)
 {
-  if(eu.gui_state)
+  if(eu.gui_state == 1)
   {
     // release drag
+    eu.gui_state = 0;
+    return 1;
+  }
+  if(eu.gui_state == 2)
+  {
+    // exposure correction
+    eu.conv.exposure += (mouse->x - eu.pointer_button.x)/(float)eu.display->width;
     eu.gui_state = 0;
     return 1;
   }
@@ -111,18 +138,13 @@ int onMouseMove(mouse_t *mouse)
   if(eu.gui_state == 1)
   {
     // if drag move image
-    float x, y;
-    pointer_to_image(&x, &y);
     float diff_x = (eu.pointer.x - eu.pointer_button.x - eu.conv.roi_out.x)/eu.conv.roi.scale;
     float diff_y = (eu.pointer.y - eu.pointer_button.y - eu.conv.roi_out.y)/eu.conv.roi.scale;
     eu.conv.roi.x = MAX(0, eu.gui_x_button - diff_x);
     eu.conv.roi.y = MAX(0, eu.gui_y_button + diff_y);
     return 1;
   }
-  else
-  {
-    return 0;
-  }
+  return 0;
 }
 
 /*
