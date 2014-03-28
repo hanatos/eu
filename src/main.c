@@ -91,7 +91,7 @@ int onKeyDown(keycode_t key)
       if(eu.display->msg_len > 0)
         display_print(eu.display, 0, 0, "");
       else
-        display_print(eu.display, 0, 0, "[e+drag] exposure [123] zoom [rgbc] color channels [arrows] next/prev image [h] this help [q/esc] quit");
+        display_print(eu.display, 0, 0, "[e+drag] exposure [123] zoom [rgbc] color channels [arrows] next/prev image [h] help [q/esc] quit [m] gamut map ");
       return 1;
 
 
@@ -103,6 +103,19 @@ int onKeyDown(keycode_t key)
         return 1;
       }
       return 0;
+
+    case KeyM:
+      if(eu.conv.gamutmap == s_gamut_clamp)
+      {
+        eu.conv.gamutmap = s_gamut_project;
+        display_print(eu.display, 0, 0, "gamut mapping: project");
+      }
+      else
+      {
+        eu.conv.gamutmap = s_gamut_clamp;
+        display_print(eu.display, 0, 0, "gamut mapping: clip");
+      }
+      return 1;
 
     case KeyQ:
       return -1;
@@ -132,8 +145,8 @@ int onMouseButtonUp(mouse_t *mouse)
   }
   if(eu.gui_state == 2)
   {
-    // exposure correction
-    eu.conv.exposure += (mouse->x - eu.pointer_button.x)/(float)eu.display->width;
+    // exposure correction, one screen width is 2 stops
+    eu.conv.exposure += 2.0f*(mouse->x - eu.pointer_button.x)/(float)eu.display->width;
     eu.gui_state = 0;
     return 1;
   }

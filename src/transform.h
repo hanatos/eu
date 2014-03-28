@@ -1,8 +1,14 @@
 #pragma once
 #include <stdint.h>
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
 
 // NaN-safe clamping (NaN compares false, and will thus result in H)
 #define CLAMP(A, L, H) ((A) > (L) ? ((A) < (H) ? (A) : (H)) : (L))
+#define MAX(A, B) ((A) < (B) ? (B) : (A))
+#define MIN(A, B) ((A) > (B) ? (B) : (A))
+
 
 typedef enum transform_channels_t
 {
@@ -73,33 +79,80 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
     const float g = 1.f/2.19921875f;
     for(int k=0;k<3;k++) in[k] = powf(in[k], g);
   }
+  else if(co == s_srgb)
+  {
+    // see http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+    const float XYZtoRGB[] =
+    {
+      // sRGB D65
+      3.2404542, -1.5371385, -0.4985314,
+      -0.9692660,  1.8760108,  0.0415560,
+      0.0556434, -0.2040259,  1.0572252,
+    };
+
+    float xyz[3] = {in[0], in[1], in[2]};
+    in[0] = in[1] = in[2] = 0.0f;
+    for(int k=0;k<3;k++)
+      for(int i=0;i<3;i++) in[k] += xyz[i]*XYZtoRGB[i+3*k];
+
+    // add srgb gamma with linear toe slope:
+    float a, b, c, g;
+    const float linear = 0.1f, gamma = 0.4f;
+    if(linear<1.0)
+    {
+      g = gamma*(1.0-linear)/(1.0-gamma*linear);
+      a = 1.0/(1.0+linear*(g-1));
+      b = linear*(g-1)*a;
+      c = powf(a*linear+b, g)/linear;
+    }
+    else
+    {
+      a = b = g = 0.0;
+      c = 1.0;
+    }
+    for(int i=0;i<3;i++)
+    {
+      float f = in[i];
+      if(f < linear) f = c*f;
+      else f = powf(a*f+b, g);
+      in[i] = f;
+    }
+  }
 }
 
-static inline void transform_gamut_map(float *in, const transform_gamut_t c)
+static inline void transform_gamutmap(float *in, const transform_gamut_t c)
 {
-  if(c == s_clamp)
+  if(c == s_gamut_clamp)
+  {
     for(int k=0;k<3;k++) in[k] = MAX(in[k], 0.0f);
-  else if(c == s_project)
+  }
+  else if(c == s_gamut_project)
+  {
     for(int k=0;k<3;k++)
     {
       if(in[k] < 0.0f)
       {
         const float wp = 1./3.f;
         int s = k+1 > 2 ? 0 : k+1;
-        int t = k+2 > 2 ? 0 : k+2;
+        int t = k-1 < 0 ? 2 : k-1;
         const float a = wp/(wp-in[k]);
-        in[s] = wp + a * in[s];
-        in[t] = wp + a * in[t];
+        assert(a <= 1.0f);
+        if(a < 0.0) fprintf(stderr, "a = %f wp %f in[%d] = %f\n", a, wp, k, in[k]);
+        assert(a >= 0.0);
+        in[s] = wp + a * (in[s]-wp);
+        in[t] = wp + a * (in[t]-wp);
+        in[k] = 0.0f;
       }
     }
+  }
 }
 
 static inline void transform_curve(const float *tmp, uint8_t *out, const transform_curve_t c)
 {
   // if(c == s_canon)
-    // TODO:
+  // TODO:
   // else
-    for(int k=0;k<3;k++)
-      out[k] = CLAMP(255.0f*tmp[k], 0, 255.0);
+  for(int k=0;k<3;k++)
+    out[k] = CLAMP(255.0f*tmp[k], 0, 255.0);
 }
 

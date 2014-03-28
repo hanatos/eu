@@ -44,8 +44,9 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->conv.roi_out.w = wd;
   eu->conv.roi_out.h = ht;
   eu->conv.roi_out.scale = 0.0f; // not used, invalidate
-  eu->conv.colorin = s_passthrough;
-  eu->conv.colorout = s_passthrough;
+  eu->conv.colorin = s_xyz;
+  eu->conv.colorout = s_srgb;
+  eu->conv.gamutmap = s_gamut_clamp;
   eu->conv.curve = s_none;
   eu->conv.channels = s_rgb;
 
@@ -55,7 +56,7 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   {
     if(fileinput_open(eu->file+k-1, arg[k]))
     {
-      // TODO: just go on with empty frames!
+      // just go on with empty frames.
       fprintf(stderr, "[eu_init] could not open file `%s'\n", arg[k]);
     }
   }

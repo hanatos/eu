@@ -13,9 +13,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define MAX(A, B) ((A) < (B) ? (B) : (A))
-#define MIN(A, B) ((A) > (B) ? (B) : (A))
-
 
 typedef struct fileinput_roi_t
 {
@@ -32,6 +29,7 @@ typedef struct fileinput_conversion_t
   transform_color_t    colorin;    // input color space description
   transform_color_t    colorout;   // desired output color space description
   transform_curve_t    curve;      // extra contrast curve for cinematic look or hdr compression.
+  transform_gamut_t    gamutmap;   // gamut mapping
   fileinput_roi_t      roi;        // region of interest. first scale input, then crop to int bounds
   fileinput_roi_t      roi_out;    // output buffer description
 }
@@ -169,9 +167,11 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
       // float exposure; adjust exposure
       transform_exposure(tmp, f);
 
-      // color conversion:
-      // fileinput_color_t    colorin;    // input color space description
-      // fileinput_color_t    colorout;   // desired output color space description
+      // color conversion
+      transform_color(tmp, c->colorin, c->colorout);
+
+      // gamut mapping 
+      transform_gamutmap(tmp, c->gamutmap);
 
       // apply curve
       transform_curve(tmp, buf+3*idx, c->curve);
