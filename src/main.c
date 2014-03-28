@@ -88,8 +88,8 @@ int onKeyDown(keycode_t key)
 int onMouseButtonDown(mouse_t *mouse)
 {
   eu.pointer = eu.pointer_button = *mouse;
-  pointer_to_image(&eu.gui_x_button, &eu.gui_y_button);
-  // fprintf(stderr, "[down] %f %f\n", eu.gui_x_button, eu.gui_y_button);
+  eu.gui_x_button = eu.conv.roi.x;
+  eu.gui_y_button = eu.conv.roi.y;
   eu.gui_state = 1;
   return 0;
 }
@@ -110,13 +110,13 @@ int onMouseMove(mouse_t *mouse)
   eu.pointer = *mouse;
   if(eu.gui_state == 1)
   {
-    // TODO: if drag, update position by moving image along button-down-pointer pos -> new pointer pos
+    // if drag move image
     float x, y;
     pointer_to_image(&x, &y);
-    // center image roi around given x and y in image coordinates
-    eu.conv.roi.x = MAX(0, x - eu.gui_x_button);
-    eu.conv.roi.y = MAX(0, y - eu.gui_y_button);
-    // fprintf(stderr, "[move] %f %f %f %f -> %d %d\n", x, y, eu.gui_x_button, eu.gui_y_button, eu.conv.roi.x, eu.conv.roi.y);
+    float diff_x = (eu.pointer.x - eu.pointer_button.x - eu.conv.roi_out.x)/eu.conv.roi.scale;
+    float diff_y = (eu.pointer.y - eu.pointer_button.y - eu.conv.roi_out.y)/eu.conv.roi.scale;
+    eu.conv.roi.x = MAX(0, eu.gui_x_button - diff_x);
+    eu.conv.roi.y = MAX(0, eu.gui_y_button + diff_y);
     return 1;
   }
   else
