@@ -88,10 +88,10 @@ int onKeyDown(keycode_t key)
       return 0;
 
     case KeyH:
-      if(eu.display.msg_len > 0)
+      if(eu.display->msg_len > 0)
         display_print(eu.display, 0, 0, "");
       else
-        display_print(eu.display, 0, 0, "[e+drag] exposure [123] zoom [rgbc] color channels [h] this help");
+        display_print(eu.display, 0, 0, "[e+drag] exposure [123] zoom [rgbc] color channels [arrows] next/prev image [h] this help [q/esc] quit");
       return 1;
 
 
