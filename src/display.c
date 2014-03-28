@@ -351,7 +351,7 @@ int display_update(display_t *d, uint8_t* pixels)
     display_close(d);
     return 0;
   }
-#if 0
+#if 1
   // render message:
   int px = d->msg_x;
   for (int pos = 0; pos < d->msg_len; pos++)
@@ -363,12 +363,12 @@ int display_update(display_t *d, uint8_t* pixels)
       unsigned char cLine = font9x16[charPos+x];			
       for (int i = 0; i < 8; i++)
       {
-        int y = d->msg_y - (15 - (i + (x&1)*8));
+        int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1;
         if ((y >= d->height) || (y < 0)) goto render_message_out;
         if (cLine & (1<<(7-i)))
-          for(int k=1;k<4;k++) pixels[(px + y*d->width)*3+k] *= 10;
+          for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
         else
-          for(int k=1;k<4;k++) pixels[(px + y*d->width)*3+k] *= 128;
+          for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 128;
       }
       if (x&1) px++;
     }

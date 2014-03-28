@@ -87,6 +87,14 @@ int onKeyDown(keycode_t key)
       eu.gui_state = 2;
       return 0;
 
+    case KeyH:
+      if(eu.display.msg_len > 0)
+        display_print(eu.display, 0, 0, "");
+      else
+        display_print(eu.display, 0, 0, "[e+drag] exposure [123] zoom [rgbc] color channels [h] this help");
+      return 1;
+
+
     case KeyZero:
       if(eu.gui_state == 2)
       {
@@ -168,6 +176,9 @@ int main(int argc, char *arg[])
   eu.display->onMouseMove = onMouseMove;
   eu.display->onMouseButtonDown = onMouseButtonDown;
   eu.display->onMouseButtonUp = onMouseButtonUp;
+
+  // display help:
+  onKeyDown(KeyH);
 
   int ret = 1;
   while(1)
