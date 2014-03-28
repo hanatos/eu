@@ -84,8 +84,12 @@ static inline void transform_gamut_map(float *in, const transform_gamut_t c)
     {
       if(in[k] < 0.0f)
       {
+        const float wp = 1./3.f;
         int s = k+1 > 2 ? 0 : k+1;
         int t = k+2 > 2 ? 0 : k+2;
+        const float a = wp/(wp-in[k]);
+        in[s] = wp + a * in[s];
+        in[t] = wp + a * in[t];
       }
     }
 }
