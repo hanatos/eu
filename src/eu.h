@@ -23,12 +23,17 @@ typedef struct eu_t
   uint8_t *pixels;
 
   mouse_t pointer;
+  mouse_t pointer_button;
+  float gui_x_button, gui_y_button;
+  int gui_state;
 }
 eu_t;
 
 static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 {
   eu->display = display_open(PROG_NAME, wd, ht);
+
+  eu->gui_state = 0;
 
   // default input to display conversion:
   eu->conv.roi.x = 0;

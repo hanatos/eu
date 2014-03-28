@@ -85,18 +85,51 @@ int onKeyDown(keycode_t key)
   }
 }
 
+int onMouseButtonDown(mouse_t *mouse)
+{
+  eu.pointer = eu.pointer_button = *mouse;
+  pointer_to_image(&eu.gui_x_button, &eu.gui_y_button);
+  // fprintf(stderr, "[down] %f %f\n", eu.gui_x_button, eu.gui_y_button);
+  eu.gui_state = 1;
+  return 0;
+}
+
+int onMouseButtonUp(mouse_t *mouse)
+{
+  if(eu.gui_state)
+  {
+    // release drag
+    eu.gui_state = 0;
+    return 1;
+  }
+  return 0;
+}
+
 int onMouseMove(mouse_t *mouse)
 {
   eu.pointer = *mouse;
-  return 0;
+  if(eu.gui_state == 1)
+  {
+    // TODO: if drag, update position by moving image along button-down-pointer pos -> new pointer pos
+    float x, y;
+    pointer_to_image(&x, &y);
+    // center image roi around given x and y in image coordinates
+    eu.conv.roi.x = MAX(0, x - eu.gui_x_button);
+    eu.conv.roi.y = MAX(0, y - eu.gui_y_button);
+    // fprintf(stderr, "[move] %f %f %f %f -> %d %d\n", x, y, eu.gui_x_button, eu.gui_y_button, eu.conv.roi.x, eu.conv.roi.y);
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
 }
+
 /*
-  void (*onKeyPressed)(keycode_t);
-  void (*onKeyUp)(keycode_t);
-  void (*onMouseButtonUp)(mouse_t);
-  void (*onMouseButtonDown)(mouse_t);
-  void (*onClose)();
-  */
+  int (*onKeyPressed)(keycode_t);
+  int (*onKeyUp)(keycode_t);
+  int (*onClose)();
+*/
 
 
 int main(int argc, char *arg[])
@@ -111,6 +144,8 @@ int main(int argc, char *arg[])
   eu_init(&eu, wd, ht, argc, arg);
   eu.display->onKeyDown = onKeyDown;
   eu.display->onMouseMove = onMouseMove;
+  eu.display->onMouseButtonDown = onMouseButtonDown;
+  eu.display->onMouseButtonUp = onMouseButtonUp;
 
   int ret = 1;
   while(1)

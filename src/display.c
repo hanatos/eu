@@ -296,6 +296,8 @@ int display_wait_event(display_t *d)
   // classify mouse move events to not trigger redraw
   int ret = 0;
   if(SDL_WaitEvent(&event)) ret = handleEvent(&event, d);
+  // empty whole event queue, to better support mouse move spam
+  while(SDL_PollEvent(&event)) ret += handleEvent(&event, d);
   if(d->isShuttingDown) return -1;
   return ret;
 }
@@ -349,7 +351,7 @@ int display_update(display_t *d, uint8_t* pixels)
     display_close(d);
     return 0;
   }
-#if 1
+#if 0
   // render message:
   int px = d->msg_x;
   for (int pos = 0; pos < d->msg_len; pos++)
