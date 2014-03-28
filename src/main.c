@@ -91,7 +91,7 @@ int onKeyDown(keycode_t key)
       if(eu.display->msg_len > 0)
         display_print(eu.display, 0, 0, "");
       else
-        display_print(eu.display, 0, 0, "[e+drag] exposure [123] zoom [rgbc] color channels [arrows] next/prev image [h] help [q/esc] quit [m] gamut map ");
+        display_print(eu.display, 0, 0, "[e]xpose [123] zoom [rgbc] channels [arrows] next/prev [h]elp [esc/q]uit [m] gamut map [p]rofile ");
       return 1;
 
 
@@ -117,6 +117,18 @@ int onKeyDown(keycode_t key)
       }
       return 1;
 
+    case KeyP:
+      if(eu.conv.colorout == s_adobergb)
+      {
+        eu.conv.colorout = s_srgb;
+        display_print(eu.display, 0, 0, "color profile: srgb");
+      }
+      else
+      {
+        eu.conv.colorout = s_adobergb;
+        display_print(eu.display, 0, 0, "color profile: adobergb");
+      }
+      return 1;
     case KeyQ:
       return -1;
 
