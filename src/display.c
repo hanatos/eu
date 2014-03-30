@@ -358,13 +358,13 @@ int display_update(display_t *d, uint8_t* pixels)
   for (int pos = 0; pos < d->msg_len; pos++)
   {
     int charPos = (d->msg[pos] - 32)*9*2;
-	if (d->msg[pos] == '\n') 
-	{
-	  ++line;
-	  px = d->msg_x;
-	}
-	else
-	{
+    if (d->msg[pos] == '\n') 
+    {
+      ++line;
+      px = d->msg_x;
+    }
+    else
+    {
       for (int x = 0; x < 9*2; x++)
       {
         if (px >= d->width) goto render_message_out;
@@ -380,7 +380,7 @@ int display_update(display_t *d, uint8_t* pixels)
         }
         if (x&1) px++;
       }
-	}
+    }
   }
 render_message_out:
 #endif
