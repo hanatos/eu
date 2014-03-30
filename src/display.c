@@ -354,24 +354,33 @@ int display_update(display_t *d, uint8_t* pixels)
 #if 1
   // render message:
   int px = d->msg_x;
+  int line = 0;
   for (int pos = 0; pos < d->msg_len; pos++)
   {
     int charPos = (d->msg[pos] - 32)*9*2;
-    for (int x = 0; x < 9*2; x++)
-    {
-      if (px >= d->width) goto render_message_out;
-      unsigned char cLine = font9x16[charPos+x];			
-      for (int i = 0; i < 8; i++)
+	if (d->msg[pos] == '\n') 
+	{
+	  ++line;
+	  px = d->msg_x;
+	}
+	else
+	{
+      for (int x = 0; x < 9*2; x++)
       {
-        int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1;
-        if ((y >= d->height) || (y < 0)) goto render_message_out;
-        if (cLine & (1<<(7-i)))
-          for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
-        else
-          for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 128;
+        if (px >= d->width) goto render_message_out;
+        unsigned char cLine = font9x16[charPos+x];			
+        for (int i = 0; i < 8; i++)
+        {
+          int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1 - line*15;
+          if ((y >= d->height) || (y < 0)) goto render_message_out;
+          if (cLine & (1<<(7-i)))
+            for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
+          else
+            for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 128;
+        }
+        if (x&1) px++;
       }
-      if (x&1) px++;
-    }
+	}
   }
 render_message_out:
 #endif
