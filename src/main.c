@@ -85,7 +85,8 @@ int onKeyPressed(keycode_t key)
 
     case KeyE:
       eu.gui_state = 2;
-      return 0;
+      display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
+      return 1;
 
     case KeyH:
       if(eu.display->msg_len > 0)
@@ -100,6 +101,7 @@ int onKeyPressed(keycode_t key)
       {
         eu.conv.exposure = 0.0f;
         eu.gui_state = 0;
+        display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
         return 1;
       }
       return 0;
@@ -160,6 +162,7 @@ int onMouseButtonUp(mouse_t *mouse)
     // exposure correction, one screen width is 2 stops
     eu.conv.exposure += 2.0f*(mouse->x - eu.pointer_button.x)/(float)eu.display->width;
     eu.gui_state = 0;
+    display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
     return 1;
   }
   return 0;
