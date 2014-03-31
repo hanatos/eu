@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
+#include "colorout_custom.h"
 
 // NaN-safe clamping (NaN compares false, and will thus result in H)
 #define CLAMP(A, L, H) ((A) > (L) ? ((A) < (H) ? (A) : (H)) : (L))
@@ -60,6 +62,11 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
 {
   if(ci == s_passthrough) return;
   assert(ci == s_xyz);
+  if(co == s_custom)
+  {
+    const float xyz[3] = {in[0], in[1], in[2]};
+    colorout_xyz_to_rgb(xyz, in);
+  }
   if(co == s_adobergb)
   {
     const float XYZtoRGB[] =

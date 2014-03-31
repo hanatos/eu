@@ -125,6 +125,11 @@ int onKeyPressed(keycode_t key)
         eu.conv.colorout = s_srgb;
         display_print(eu.display, 0, 0, "color profile: srgb");
       }
+      else if(eu.conv.colorout == s_srgb)
+      {
+        eu.conv.colorout = s_custom;
+        display_print(eu.display, 0, 0, "color profile: custom");
+      }
       else
       {
         eu.conv.colorout = s_adobergb;
