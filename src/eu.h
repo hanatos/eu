@@ -35,6 +35,8 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 
   eu->gui_state = 0;
 
+  eu->conv.verbosity = s_silent;
+
   // default input to display conversion:
   eu->conv.roi.x = 0;
   eu->conv.roi.y = 0;

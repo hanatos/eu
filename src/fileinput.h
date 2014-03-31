@@ -9,10 +9,20 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <time.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+typedef enum fileinput_verbosity_t
+{
+  s_silent = 0,
+  s_timing = 1,
+  s_warning = 2,
+}
+fileinput_verbosity_t;
 
 typedef struct fileinput_roi_t
 {
@@ -32,6 +42,8 @@ typedef struct fileinput_conversion_t
   transform_gamut_t    gamutmap;   // gamut mapping
   fileinput_roi_t      roi;        // region of interest. first scale input, then crop to int bounds
   fileinput_roi_t      roi_out;    // output buffer description
+
+  fileinput_verbosity_t verbosity; // control log output to stderr
 }
 fileinput_conversion_t;
 
@@ -98,9 +110,12 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
   while(endptr < (char *)in->data + 100 && *endptr != '\n') endptr++;
   in->pfm.pixel = (float*)(++endptr); // remove second newline
 
-  // TODO: check alignment of float pointer!
-  // TODO: while writing make sure the pixel data is 16-byte aligned for sse.
-  // TODO: achieve this by padding up the idiotic scale factor line in the header.
+  // while writing make sure the pixel data is 16-byte aligned for sse.
+  // achieve this by padding up the idiotic scale factor line in the header with additional 0s
+  if((size_t)in->pfm.pixel & 0xf)
+    fprintf(stderr, "[fileinput_open] `%s' pixel buffer not SSE aligned!\n", filename);
+  if((size_t)in->pfm.pixel & 0x3)
+    fprintf(stderr, "[fileinput_open] `%s' pixel buffer not float aligned!\n", filename);
 
   // sanity check:
   if(in->pfm.width*in->pfm.height*3*sizeof(float) > in->data_size - (endptr - (char *)in->data))
@@ -111,10 +126,18 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
   return 0;
 }
 
+static inline double _time_wallclock()
+{
+  struct timeval time;
+  gettimeofday(&time, NULL);
+  return time.tv_sec - 1290608000 + (1.0/1000000.0)*time.tv_usec;
+} 
+
 /* grab a framebuffer from the mmapped file, only use the memory allocated for the framebuffer.
  * this needs to be extremely efficient to allow for video playback. */
 static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *c, uint8_t *buf)
 {
+  double start = _time_wallclock();
   // skip dead frames
   if(in->fd < 0) return 1;
   const float scalex = 1.0f/c->roi.scale;
@@ -185,18 +208,11 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
     y += scaley;
     x = ix2;
   }
-
-#if 0
-  // XXX this is rubbish, not feature complete, and needs to be optimized a lot!
-  for(int j=0;j<c->roi.h;j++)
+  if(c->verbosity & s_timing)
   {
-    for(int i=0;i<c->roi.w;i++)
-    {
-      for(int k=0;k<3;k++)
-        buf[3*(j*c->roi.w + i) + k] = 255.0 * in->pfm.pixel[3*(j*in->pfm.width + i) + k];
-    }
+    double end = _time_wallclock();
+    fprintf(stderr, "[grab] frame rendered in %.04f sec\n", end-start);
   }
-#endif
   return 0;
 }
 

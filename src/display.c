@@ -239,13 +239,24 @@ int handleEvent(const SDL_Event *event, display_t *d)
         d->isShuttingDown = 1;
         if(d->onClose) ret = d->onClose();
       }
-      else if(keysym < keyMapSize && d->onKeyDown) ret = d->onKeyDown(normalKeys[keysym]);
+      else if(keysym < keyMapSize)
+      {
+        if(d->onKeyDown)
+          ret = d->onKeyDown(normalKeys[keysym]);
+        if(ret < 0) return ret;
+        int ret2 = 0;
+        if(d->onKeyPressed)
+          ret2 = d->onKeyPressed(normalKeys[keysym]);
+        if(ret2 < 0) return ret2;
+        return ret + ret2;
+      }
       }
       return ret;
     case SDL_KEYUP:
       {
       const SDLKey keysym = event->key.keysym.sym;
-      if(keysym < keyMapSize && d->onKeyUp) ret = d->onKeyUp(normalKeys[keysym]);
+      if(keysym < keyMapSize && d->onKeyUp)
+          ret = d->onKeyUp(normalKeys[keysym]);
       }
       return ret;
     case SDL_QUIT:

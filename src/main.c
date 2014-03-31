@@ -15,7 +15,7 @@ static inline void offset_image(float x, float y)
   eu.conv.roi.y = MAX(0, y - eu.conv.roi_out.h/(eu.conv.roi.scale * 2));
 }
 
-int onKeyDown(keycode_t key)
+int onKeyPressed(keycode_t key)
 {
   char title[256];
   float x, y;
@@ -181,8 +181,8 @@ int onMouseMove(mouse_t *mouse)
 }
 
 /*
-  int (*onKeyPressed)(keycode_t);
   int (*onKeyUp)(keycode_t);
+  int (*onKeyDown)(keycode_t);
   int (*onClose)();
 */
 
@@ -197,13 +197,13 @@ int main(int argc, char *arg[])
 
   const int wd = 1024, ht = 576;
   eu_init(&eu, wd, ht, argc, arg);
-  eu.display->onKeyDown = onKeyDown;
+  eu.display->onKeyPressed = onKeyPressed;
   eu.display->onMouseMove = onMouseMove;
   eu.display->onMouseButtonDown = onMouseButtonDown;
   eu.display->onMouseButtonUp = onMouseButtonUp;
 
   // display help:
-  onKeyDown(KeyH);
+  onKeyPressed(KeyH);
 
   int ret = 1;
   while(1)
@@ -216,7 +216,7 @@ int main(int argc, char *arg[])
       display_update(eu.display, eu.pixels);
     }
     // get user input, wait for it if need be.
-    int ret = display_wait_event(eu.display);
+    ret = display_wait_event(eu.display);
     if(ret < 0) break;
   }
 
