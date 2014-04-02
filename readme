@@ -29,3 +29,9 @@ some features are hinted at by the [h]elp text overlay:
 [q][esc] quit
 [m] toggle gamut mapping method
 [p] toggle color profile
+
+
+build:
+
+ edit config.mk (example supplied) to match your screen profile if you want one
+ make
