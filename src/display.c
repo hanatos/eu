@@ -385,9 +385,9 @@ int display_update(display_t *d, uint8_t* pixels)
           int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1 - line*15;
           if ((y >= d->height) || (y < 0)) goto render_message_out;
           if (cLine & (1<<(7-i)))
-            for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
+            for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
           else
-            for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 128;
+            for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] *= 0.2;
         }
         if (x&1) px++;
       }
@@ -440,7 +440,7 @@ void display_print(display_t *d, const int px, const int py, const char *msg, ..
 {
   va_list ap;
   va_start(ap, msg);
-  vsnprintf(d->msg, 255, msg, ap);
+  vsnprintf(d->msg, 4096, msg, ap);
   // vprintf(msg, ap);
   // printf("\n");
   va_end(ap);

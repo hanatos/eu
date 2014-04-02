@@ -2,6 +2,36 @@
 
 eu_t eu;
 
+static inline char* load_sidecar(fileinput_t *file)
+{
+  char filename[1024];
+  (void)strncpy(filename, file->filename, 1024);
+  char *t = filename + strlen(filename);
+  while(t > filename && *t != '.') t--;
+  if(*t == '.') sprintf(t, ".txt");
+
+  char *text = 0;
+  int sc_fd = open(filename, O_RDONLY);
+  if(sc_fd != -1)
+  {
+    size_t sc_size = lseek(sc_fd, 0, SEEK_END);
+    text = (char*)malloc(sc_size);
+    lseek(sc_fd, 0, SEEK_SET);
+    if(text)
+    {
+      text[sc_size] = '\0';
+      while(sc_size > 0)
+      {
+        ssize_t res = read(sc_fd, text, sc_size);
+        if(res < 0) break;
+        sc_size -= res;
+      }
+    }
+    close(sc_fd);
+  }
+  return text;
+}
+
 static inline void pointer_to_image(float *x, float *y)
 {
   *x = CLAMP((eu.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x, 0, eu.conv.roi.w-1);
@@ -67,7 +97,7 @@ int onKeyPressed(keycode_t key)
       if(eu.current_file < eu.num_files-1)
       {
         eu.current_file++;
-        snprintf(title, 256, "frame %04d/%04d", eu.current_file+1, eu.num_files);
+        snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
         display_title(eu.display, title);
         return 1;
       }
@@ -77,7 +107,7 @@ int onKeyPressed(keycode_t key)
       if(eu.current_file > 0)
       {
         eu.current_file--;
-        snprintf(title, 256, "frame %04d/%04d", eu.current_file+1, eu.num_files);
+        snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
         display_title(eu.display, title);
         return 1;
       }
@@ -92,9 +122,19 @@ int onKeyPressed(keycode_t key)
       if(eu.display->msg_len > 0)
         display_print(eu.display, 0, 0, "");
       else
-        display_print(eu.display, 0, 0, "[e]xpose [123] zoom [rgbc] channels [arrows] next/prev [h]elp [esc/q]uit [m] gamut map [p]rofile ");
+        display_print(eu.display, 0, 0, "[e]xpose [123] zoom [rgbc] channels [arrows] next/prev [h]elp [esc/q]uit [m] gamut map [p]rofile [s]idecar ");
       return 1;
 
+    case KeyS:
+      {
+        char *text = load_sidecar(eu.file + eu.current_file);
+        if(text)
+        {
+          display_print(eu.display, 0, 0, text);
+          free(text);
+        }
+        return 1;
+      }
 
     case KeyZero:
       if(eu.gui_state == 2)
@@ -111,6 +151,11 @@ int onKeyPressed(keycode_t key)
       {
         eu.conv.gamutmap = s_gamut_project;
         display_print(eu.display, 0, 0, "gamut mapping: project");
+      }
+      else if(eu.conv.gamutmap == s_gamut_project)
+      {
+        eu.conv.gamutmap = s_gamut_mark;
+        display_print(eu.display, 0, 0, "gamut mapping: mark");
       }
       else
       {

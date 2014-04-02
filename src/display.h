@@ -10,7 +10,7 @@ typedef struct display_t
 	int isShuttingDown;
   int width;
   int height;
-  char msg[256];
+  char msg[4096];
   int msg_len;
   int msg_x, msg_y;
 

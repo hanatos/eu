@@ -61,6 +61,7 @@ typedef struct fileinput_t
   int fd;              // file descriptor
   void *data;          // mapped buffer
   size_t data_size;    // size of file
+  char filename[1024]; // buffer file name
 
   fileinput_pfm_t pfm; // only supported format so far
 }
@@ -90,6 +91,7 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
 {
   in->data = 0;
   in->fd = open(filename, O_RDONLY);
+  (void)strncpy(in->filename, filename, 1024);
   if(in->fd == -1) return 1;
   in->data_size = lseek(in->fd, 0, SEEK_END);
   if(in->data_size < 100)

@@ -36,6 +36,7 @@ typedef enum transform_gamut_t
 {
   s_gamut_clamp,   // just clamp to 0, 1 (absolute colorimetric)
   s_gamut_project, // project to 1/3 wp  (relative colorimetric)
+  s_gamut_mark,    // mark out of gamut spots in weird colors
 }
 transform_gamut_t;
 
@@ -67,7 +68,7 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
     const float xyz[3] = {in[0], in[1], in[2]};
     colorout_xyz_to_rgb(xyz, in);
   }
-  if(co == s_adobergb)
+  else if(co == s_adobergb)
   {
     const float XYZtoRGB[] =
     {
@@ -151,6 +152,12 @@ static inline void transform_gamutmap(float *in, const transform_gamut_t c)
         in[k] = 0.0f;
       }
     }
+  }
+  else if(c == s_gamut_mark)
+  {
+    for(int k=0;k<3;k++)
+      if(in[k] < 0.0f)
+        in[0] = in[1] = in[2] = 1.0f*(((size_t)in/3)&1);
   }
 }
 
