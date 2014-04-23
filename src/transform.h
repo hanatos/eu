@@ -130,6 +130,7 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
 
 static inline void transform_gamutmap(float *in, const transform_gamut_t c)
 {
+  static int mark = 0;
   if(c == s_gamut_clamp)
   {
     for(int k=0;k<3;k++) in[k] = MAX(in[k], 0.0f);
@@ -140,24 +141,31 @@ static inline void transform_gamutmap(float *in, const transform_gamut_t c)
     {
       if(in[k] < 0.0f)
       {
-        const float wp = 1./3.f;
+        // const float wp = 1./3.f;
         int s = k+1 > 2 ? 0 : k+1;
         int t = k-1 < 0 ? 2 : k-1;
-        const float a = wp/(wp-in[k]);
+        // scale white point to same brightness as rgb.
+        // as we're using wp = 1/3 for gamut mapping, brightness is r+g+b.
+        const float brightness = in[0] + in[1] + in[2];
+        const float white = 1./3.;//fmaxf(0.0f, brightness); // this will need to be white[3] for more complex wp
+        const float a = white/(white-in[k]);
         assert(a <= 1.0f);
-        if(a < 0.0) fprintf(stderr, "a = %f wp %f in[%d] = %f\n", a, wp, k, in[k]);
+        if(a < 0.0) fprintf(stderr, "a = %f wp %f in[%d] = %f (%f %f %f)\n", a, white, k, in[k], in[0], in[1], in[2]);
         assert(a >= 0.0);
-        in[s] = wp + a * (in[s]-wp);
-        in[t] = wp + a * (in[t]-wp);
+        in[s] = white + a * (in[s]-white);
+        in[t] = white + a * (in[t]-white);
         in[k] = 0.0f;
       }
     }
   }
   else if(c == s_gamut_mark)
   {
-    for(int k=0;k<3;k++)
-      if(in[k] < 0.0f)
-        in[0] = in[1] = in[2] = 1.0f*(((size_t)in/3)&1);
+    if(in[0] < 0.0 || in[1] < 0.0 || in[2] < 0.0)
+    {
+      in[0] = (mark&4) ? 1.0f : 0.0f;
+      in[1] = in[2] = (mark&4) ? 0.0f : 1.0f;
+      mark++;
+    }
   }
 }
 
