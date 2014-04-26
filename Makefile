@@ -20,6 +20,7 @@ eu: Makefile src/*.c src/*.h
 
 install: eu
 	cp -f eu ${PREFIX}/bin/
+	cp -f eu.complete /etc/bash_completion.d/eu
 
 clean:
 	rm -f eu

@@ -1,0 +1,2 @@
+# bash completion for eu, search for pfm in all subdirs.
+complete -o dirnames -f -X '!*.pfm' eu
