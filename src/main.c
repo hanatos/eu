@@ -15,7 +15,7 @@ static inline char* load_sidecar(fileinput_t *file)
   if(sc_fd != -1)
   {
     size_t sc_size = lseek(sc_fd, 0, SEEK_END);
-    text = (char*)malloc(sc_size);
+    text = (char*)malloc(sc_size+1);
     lseek(sc_fd, 0, SEEK_SET);
     if(text)
     {
