@@ -101,7 +101,7 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
   }
   lseek(in->fd, 0, SEEK_SET);
   // this will cause segfaults in case anybody else is writing it while we have it mapped
-  in->data = mmap(0, in->data_size, PROT_READ, MAP_SHARED, in->fd, 0);
+  in->data = mmap(0, in->data_size, PROT_READ, MAP_SHARED | MAP_NORESERVE, in->fd, 0);
 
   // get pfm header for faster grabbing later on.
   // no error handling is done, no comments supported.

@@ -127,13 +127,18 @@ int onKeyPressed(keycode_t key)
 
     case KeyS:
       {
+      if(eu.display->msg_len > 0)
+        display_print(eu.display, 0, 0, "");
+      else
+      {
         char *text = load_sidecar(eu.file + eu.current_file);
         if(text)
         {
           display_print(eu.display, 0, 0, text);
           free(text);
         }
-        return 1;
+      }
+      return 1;
       }
 
     case KeyZero:
