@@ -10,6 +10,7 @@
 // fastest to type while the right hand is on the mouse, copy/pasting the file name.
 // this is true on a dvorak keyboard, where these are on the left homerow, middle + index fingers:
 #define PROG_NAME "eu"
+#define PROG_VERSION 1
 
 typedef struct eu_gui_state_t
 {
@@ -44,6 +45,29 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->conv.verbosity = s_silent;
 
   // default input to display conversion:
+  eu->conv.roi_out.scale = 0.0f; // not used, invalidate
+  eu->conv.colorin = s_xyz;
+  eu->conv.colorout = s_srgb;
+  eu->conv.gamutmap = s_gamut_clamp;
+  eu->conv.curve = s_none;
+  eu->conv.channels = s_rgb;
+
+  const char *home = getenv("HOME");
+  char file[1024];
+  snprintf(file, 1024, "%s/.config/eu/eurc", home);
+  FILE *f = fopen(file, "rb");
+  if(f)
+  {
+    int v;
+    fread(&v, 1, sizeof(int), f);
+    if(v == PROG_VERSION)
+    {
+      fread(&eu->conv, 1, sizeof(fileinput_conversion_t), f);
+      fread(&eu->gui, 1, sizeof(eu_gui_state_t), f);
+    }
+    fclose(f);
+  }
+
   eu->conv.roi.x = 0;
   eu->conv.roi.y = 0;
   eu->conv.roi.scale = 1.0f;
@@ -51,12 +75,6 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->conv.roi_out.y = 0;
   eu->conv.roi_out.w = wd;
   eu->conv.roi_out.h = ht;
-  eu->conv.roi_out.scale = 0.0f; // not used, invalidate
-  eu->conv.colorin = s_xyz;
-  eu->conv.colorout = s_srgb;
-  eu->conv.gamutmap = s_gamut_clamp;
-  eu->conv.curve = s_none;
-  eu->conv.channels = s_rgb;
 
   eu->num_files = argc-1;
   eu->file = (fileinput_t *)aligned_alloc(16, (argc-1)*sizeof(fileinput_t));
@@ -79,6 +97,21 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 
 static inline void eu_cleanup(eu_t *eu)
 {
+  // write config file:
+  const char *home = getenv("HOME");
+  char dir[1024];
+  snprintf(dir, 1024, "%s/.config/eu", home);
+  mkdir(dir, 0775);
+  snprintf(dir, 1024, "%s/.config/eu/eurc", home);
+  FILE *f = fopen(dir, "wb");
+  if(f)
+  {
+    int v = PROG_VERSION;
+    fwrite(&v, 1, sizeof(int), f);
+    fwrite(&eu->conv, 1, sizeof(fileinput_conversion_t), f);
+    fwrite(&eu->gui, 1, sizeof(eu_gui_state_t), f);
+    fclose(f);
+  }
   for(int k=0;k<eu->num_files;k++)
     fileinput_close(eu->file+k);
   display_close(eu->display);

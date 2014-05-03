@@ -32,6 +32,33 @@ static inline char* load_sidecar(fileinput_t *file)
   return text;
 }
 
+static inline void show_metadata()
+{
+  if(eu.gui.show_metadata)
+  {
+    char *text = load_sidecar(eu.file + eu.current_file);
+    if(text)
+    {
+      display_print(eu.display, 0, 0, text);
+      free(text);
+    }
+  }
+}
+
+static inline void toggle_metadata()
+{
+  if(eu.gui.show_metadata)
+  {
+    eu.gui.show_metadata = 0;
+    display_print(eu.display, 0, 0, "");
+  }
+  else
+  {
+    eu.gui.show_metadata = 1;
+    show_metadata();
+  }
+}
+
 static inline void pointer_to_image(float *x, float *y)
 {
   *x = CLAMP((eu.gui.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x, 0, eu.conv.roi.w-1);
@@ -99,6 +126,7 @@ int onKeyPressed(keycode_t key)
         eu.current_file++;
         snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
         display_title(eu.display, title);
+        show_metadata();
         return 1;
       }
       return 0;
@@ -109,6 +137,7 @@ int onKeyPressed(keycode_t key)
         eu.current_file--;
         snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
         display_title(eu.display, title);
+        show_metadata();
         return 1;
       }
       return 0;
@@ -126,20 +155,8 @@ int onKeyPressed(keycode_t key)
       return 1;
 
     case KeyS:
-      {
-      if(eu.display->msg_len > 0)
-        display_print(eu.display, 0, 0, "");
-      else
-      {
-        char *text = load_sidecar(eu.file + eu.current_file);
-        if(text)
-        {
-          display_print(eu.display, 0, 0, text);
-          free(text);
-        }
-      }
+      toggle_metadata();
       return 1;
-      }
 
     case KeyZero:
       if(eu.gui.dragging == 2)
