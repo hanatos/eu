@@ -146,7 +146,7 @@ static inline void transform_gamutmap(float *in, const transform_gamut_t c)
         int t = k-1 < 0 ? 2 : k-1;
         // scale white point to same brightness as rgb.
         // as we're using wp = 1/3 for gamut mapping, brightness is r+g+b.
-        const float brightness = in[0] + in[1] + in[2];
+        // const float brightness = in[0] + in[1] + in[2];
         const float white = 1./3.;//fmaxf(0.0f, brightness); // this will need to be white[3] for more complex wp
         const float a = white/(white-in[k]);
         assert(a <= 1.0f);

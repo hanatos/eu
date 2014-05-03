@@ -34,8 +34,8 @@ static inline char* load_sidecar(fileinput_t *file)
 
 static inline void pointer_to_image(float *x, float *y)
 {
-  *x = CLAMP((eu.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x, 0, eu.conv.roi.w-1);
-  *y = CLAMP(((eu.display->height - eu.pointer.y - 1) - eu.conv.roi_out.y) / eu.conv.roi.scale + eu.conv.roi.y, 0, eu.conv.roi.h-1);
+  *x = CLAMP((eu.gui.pointer.x - eu.conv.roi_out.x) / eu.conv.roi.scale + eu.conv.roi.x, 0, eu.conv.roi.w-1);
+  *y = CLAMP(((eu.display->height - eu.gui.pointer.y - 1) - eu.conv.roi_out.y) / eu.conv.roi.scale + eu.conv.roi.y, 0, eu.conv.roi.h-1);
 }
 
 static inline void offset_image(float x, float y)
@@ -114,7 +114,7 @@ int onKeyPressed(keycode_t key)
       return 0;
 
     case KeyE:
-      eu.gui_state = 2;
+      eu.gui.dragging = 2;
       display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
       return 1;
 
@@ -142,10 +142,10 @@ int onKeyPressed(keycode_t key)
       }
 
     case KeyZero:
-      if(eu.gui_state == 2)
+      if(eu.gui.dragging == 2)
       {
         eu.conv.exposure = 0.0f;
-        eu.gui_state = 0;
+        eu.gui.dragging = 0;
         display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
         return 1;
       }
@@ -196,27 +196,27 @@ int onKeyPressed(keycode_t key)
 
 int onMouseButtonDown(mouse_t *mouse)
 {
-  eu.pointer = eu.pointer_button = *mouse;
-  eu.gui_x_button = eu.conv.roi.x;
-  eu.gui_y_button = eu.conv.roi.y;
-  if(eu.gui_state == 0)
-    eu.gui_state = 1;
+  eu.gui.pointer = eu.gui.pointer_button = *mouse;
+  eu.gui.button_x = eu.conv.roi.x;
+  eu.gui.button_y = eu.conv.roi.y;
+  if(eu.gui.dragging == 0)
+    eu.gui.dragging = 1;
   return 0;
 }
 
 int onMouseButtonUp(mouse_t *mouse)
 {
-  if(eu.gui_state == 1)
+  if(eu.gui.dragging == 1)
   {
     // release drag
-    eu.gui_state = 0;
+    eu.gui.dragging = 0;
     return 1;
   }
-  if(eu.gui_state == 2)
+  if(eu.gui.dragging == 2)
   {
     // exposure correction, one screen width is 2 stops
-    eu.conv.exposure += 2.0f*(mouse->x - eu.pointer_button.x)/(float)eu.display->width;
-    eu.gui_state = 0;
+    eu.conv.exposure += 2.0f*(mouse->x - eu.gui.pointer_button.x)/(float)eu.display->width;
+    eu.gui.dragging = 0;
     display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
     return 1;
   }
@@ -225,14 +225,14 @@ int onMouseButtonUp(mouse_t *mouse)
 
 int onMouseMove(mouse_t *mouse)
 {
-  eu.pointer = *mouse;
-  if(eu.gui_state == 1)
+  eu.gui.pointer = *mouse;
+  if(eu.gui.dragging == 1)
   {
     // if drag move image
-    float diff_x = (eu.pointer.x - eu.pointer_button.x - eu.conv.roi_out.x)/eu.conv.roi.scale;
-    float diff_y = (eu.pointer.y - eu.pointer_button.y - eu.conv.roi_out.y)/eu.conv.roi.scale;
-    eu.conv.roi.x = MAX(0, eu.gui_x_button - diff_x);
-    eu.conv.roi.y = MAX(0, eu.gui_y_button + diff_y);
+    float diff_x = (eu.gui.pointer.x - eu.gui.pointer_button.x - eu.conv.roi_out.x)/eu.conv.roi.scale;
+    float diff_y = (eu.gui.pointer.y - eu.gui.pointer_button.y - eu.conv.roi_out.y)/eu.conv.roi.scale;
+    eu.conv.roi.x = MAX(0, eu.gui.button_x - diff_x);
+    eu.conv.roi.y = MAX(0, eu.gui.button_y + diff_y);
     return 1;
   }
   return 0;

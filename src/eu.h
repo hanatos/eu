@@ -11,6 +11,16 @@
 // this is true on a dvorak keyboard, where these are on the left homerow, middle + index fingers:
 #define PROG_NAME "eu"
 
+typedef struct eu_gui_state_t
+{
+  mouse_t pointer;
+  mouse_t pointer_button;
+  float button_x, button_y;
+  int dragging;
+  int show_metadata;
+}
+eu_gui_state_t;
+
 
 typedef struct eu_t
 {
@@ -21,11 +31,7 @@ typedef struct eu_t
   fileinput_conversion_t conv;
 
   uint8_t *pixels;
-
-  mouse_t pointer;
-  mouse_t pointer_button;
-  float gui_x_button, gui_y_button;
-  int gui_state;
+  eu_gui_state_t gui;
 }
 eu_t;
 
@@ -33,7 +39,7 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 {
   eu->display = display_open(PROG_NAME, wd, ht);
 
-  eu->gui_state = 0;
+  memset(&eu->gui, 0, sizeof(eu_gui_state_t));
 
   eu->conv.verbosity = s_silent;
 
