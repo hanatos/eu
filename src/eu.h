@@ -8,7 +8,8 @@
 
 
 // fastest to type while the right hand is on the mouse, copy/pasting the file name.
-// this is true on a dvorak keyboard, where these are on the left homerow, middle + index fingers:
+// this is true on a dvorak keyboard, where these are on the left homerow, middle + index fingers.
+// you might want to rename it to `df' on a qwerty keyboard:
 #define PROG_NAME "eu"
 #define PROG_VERSION 1
 

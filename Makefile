@@ -14,6 +14,9 @@ include config.mk
 
 all: eu
 
+debug: OPTFLAGS=-ggdb3
+debug: eu
+
 eu: Makefile src/*.c src/*.h
 	cp -f color/$(COLOR).h src/colorout_custom.h
 	$(CC) $(CFLAGS) $(OPTFLAGS) src/*.c $(LDFLAGS) -o eu

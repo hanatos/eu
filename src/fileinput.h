@@ -151,8 +151,10 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
   int32_t ow = c->roi_out.w, oh = c->roi_out.h;
   int32_t ox2 = MAX(0, (c->roi_out.w-in->pfm.width*c->roi.scale)*.5f);
   int32_t oy2 = MAX(0, (c->roi_out.h-in->pfm.height*c->roi.scale)*.5f);
-  int32_t oh2 = MIN(MIN(oh, (ibh - iy2)/scaley), obh - oy2);
-  int32_t ow2 = MIN(MIN(ow, (ibw - ix2)/scalex), obw - ox2);
+  int32_t oh2 = MIN(MIN(oh, MAX(0, (ibh - iy2)/scaley)), MAX(0, obh - oy2));
+  int32_t ow2 = MIN(MIN(ow, MAX(0, (ibw - ix2)/scalex)), MAX(0, obw - ox2));
+  ix2 = CLAMP(ix2, 0, ibw - ow2*scalex);
+  iy2 = CLAMP(iy2, 0, ibh - oh2*scaley);
   assert((int)(ix2 + ow2*scalex) <= ibw);
   assert((int)(iy2 + oh2*scaley) <= ibh);
   assert(ox2 + ow2 <= obw);

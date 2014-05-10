@@ -277,9 +277,6 @@ int main(int argc, char *arg[])
   eu.display->onMouseButtonDown = onMouseButtonDown;
   eu.display->onMouseButtonUp = onMouseButtonUp;
 
-  // display help:
-  onKeyPressed(KeyH);
-
   int ret = 1;
   while(1)
   {
