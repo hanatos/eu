@@ -119,6 +119,18 @@ int onKeyPressed(keycode_t key)
       eu.conv.channels = s_rgb;
       return 1;
 
+    case KeyI: // input color space
+      if(eu.conv.colorin == s_passthrough)
+      {
+        display_print(eu.display, 0, 0, "input color: xyz");
+        eu.conv.colorin = s_xyz;
+      }
+      else
+      {
+        display_print(eu.display, 0, 0, "input color: passthrough");
+        eu.conv.colorin = s_passthrough;
+      }
+
     case KeyDown:
     case KeyRight:
       if(eu.current_file < eu.num_files-1)
