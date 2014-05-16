@@ -265,6 +265,8 @@ int onMouseMove(mouse_t *mouse)
     eu.conv.roi.y = MAX(0, eu.gui.button_y + diff_y);
     return 1;
   }
+  // all dragging should refresh
+  if(eu.gui.dragging) return 1;
   return 0;
 }
 
