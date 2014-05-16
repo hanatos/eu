@@ -130,6 +130,7 @@ int onKeyPressed(keycode_t key)
         display_print(eu.display, 0, 0, "input color: passthrough");
         eu.conv.colorin = s_passthrough;
       }
+      return 1;
 
     case KeyDown:
     case KeyRight:
