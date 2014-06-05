@@ -389,7 +389,7 @@ int display_update(display_t *d, uint8_t* pixels)
         unsigned char cLine = font9x16[charPos+x];			
         for (int i = 0; i < 8; i++)
         {
-          int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1 - line*15;
+          int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1 - line*16;
           if ((y >= d->height) || (y < 0)) goto render_message_out;
           if (cLine & (1<<(7-i)))
             for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
