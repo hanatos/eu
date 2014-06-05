@@ -366,12 +366,19 @@ int display_update(display_t *d, uint8_t* pixels)
   // render message:
   int px = d->msg_x;
   int line = 0;
-  for (int pos = 0; pos < d->msg_len; pos++)
+  int char_in_line = 0;
+  for (int pos = 0; pos < d->msg_len; pos++,char_in_line++)
   {
     int charPos = (d->msg[pos] - 32)*9*2;
+    if (char_in_line > 120)
+    {
+      while(d->msg[pos] != '\n' && pos < d->msg_len) pos++;
+      if(pos == d->msg_len) break;
+    }
     if (d->msg[pos] == '\n') 
     {
       ++line;
+      char_in_line = 0;
       px = d->msg_x;
     }
     else
