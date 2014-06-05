@@ -370,7 +370,7 @@ int display_update(display_t *d, uint8_t* pixels)
   for (int pos = 0; pos < d->msg_len; pos++,char_in_line++)
   {
     int charPos = (d->msg[pos] - 32)*9*2;
-    if (char_in_line > 120)
+    if (char_in_line > 80)
     {
       while(d->msg[pos] != '\n' && pos < d->msg_len) pos++;
       if(pos == d->msg_len) break;
