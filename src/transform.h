@@ -126,6 +126,22 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
       in[i] = f;
     }
   }
+  else if(co == s_rec709)
+  {
+    // see http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+    const float XYZtoRGB[] =
+    {
+      // sRGB D65
+      3.2404542, -1.5371385, -0.4985314,
+      -0.9692660,  1.8760108,  0.0415560,
+      0.0556434, -0.2040259,  1.0572252,
+    };
+
+    float xyz[3] = {in[0], in[1], in[2]};
+    in[0] = in[1] = in[2] = 0.0f;
+    for(int k=0;k<3;k++)
+      for(int i=0;i<3;i++) in[k] += xyz[i]*XYZtoRGB[i+3*k];
+  }
 }
 
 static inline void transform_gamutmap(float *in, const transform_gamut_t c)

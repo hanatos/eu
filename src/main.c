@@ -210,6 +210,11 @@ int onKeyPressed(keycode_t key)
         eu.conv.colorout = s_custom;
         display_print(eu.display, 0, 0, "color profile: custom");
       }
+      else if(eu.conv.colorout == s_custom)
+      {
+        eu.conv.colorout = s_rec709;
+        display_print(eu.display, 0, 0, "color profile: rec709");
+      }
       else
       {
         eu.conv.colorout = s_adobergb;
