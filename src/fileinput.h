@@ -133,7 +133,62 @@ static inline double _time_wallclock()
   struct timeval time;
   gettimeofday(&time, NULL);
   return time.tv_sec - 1290608000 + (1.0/1000000.0)*time.tv_usec;
-} 
+}
+
+static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_t *c, const char *filename)
+{
+  FILE *out = fopen(filename, "wb");
+  if(!out) return 1;
+
+  double start = _time_wallclock();
+  // skip dead frames
+  if(in->fd < 0) return 1;
+
+  const float f = powf(2.0f, c->exposure);
+
+  fprintf(out, "PF\n%d %d\n-1.0", jj
+  char header[1024];
+  snprintf(header, 1024, "PF\n%d %d\n-1.0", in->pfm.width, in->pfm.height);
+  size_t len = strlen(header);
+  fprintf(out, "PF\n%d %d\n-1.0", in->pfm.width, in->pfm.height);
+  ssize_t off = 0;
+  while((len + 1 + off) & 0xf) off++;
+  while(off-- > 0) fprintf(out, "0");
+  fprintf(out, "\n");
+
+  for(int j=0; j<in->pfm.height; j++)
+  {
+    for(int i=0; i<in->pfm.width; i++)
+    {
+      float tmp[3], tmp2[3];
+      for(int k=0; k<3; k++) tmp[k] = in->pfm.pixel[3*(in->pfm.width*j + i) + k];
+
+      // float exposure; adjust exposure
+      transform_exposure(tmp, f);
+
+      // color conversion
+      transform_color(tmp, c->colorin, c->colorout);
+
+      // gamut mapping 
+      transform_gamutmap(tmp, c->gamutmap);
+
+      // apply curve
+      transform_curve(tmp, tmp2, c->curve);
+
+      // zero out channels
+      transform_channels(tmp2, c->channels);
+
+      fwrite(tmp2, sizeof(float), 3, out);
+    }
+  }
+  fclose(out);
+  if(c->verbosity & s_timing)
+  {
+    double end = _time_wallclock();
+    fprintf(stderr, "[process] frame rendered in %.04f sec\n", end-start);
+  }
+  return 0;
+}
 
 /* grab a framebuffer from the mmapped file, only use the memory allocated for the framebuffer.
  * this needs to be extremely efficient to allow for video playback. */
