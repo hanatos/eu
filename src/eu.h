@@ -81,7 +81,13 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->file = (fileinput_t *)aligned_alloc(16, (argc-1)*sizeof(fileinput_t));
   for(int k=1;k<argc;k++)
   {
-    if(fileinput_open(eu->file+k-1, arg[k]))
+    if(!strcmp(arg[k], "-o"))
+    {
+      k++;
+      if(k < argc)
+        fileinput_process(eu->file+k-3, &eu->conv, arg[k]);
+    }
+    else if(fileinput_open(eu->file+k-1, arg[k]))
     {
       // just go on with empty frames.
       fprintf(stderr, "[eu_init] could not open file `%s'\n", arg[k]);

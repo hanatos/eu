@@ -137,6 +137,7 @@ static inline double _time_wallclock()
 
 static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_t *c, const char *filename)
 {
+  fprintf(stderr, "[process] rendering `%s'\n", filename);
   FILE *out = fopen(filename, "wb");
   if(!out) return 1;
 
@@ -146,7 +147,6 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
 
   const float f = powf(2.0f, c->exposure);
 
-  fprintf(out, "PF\n%d %d\n-1.0", jj
   char header[1024];
   snprintf(header, 1024, "PF\n%d %d\n-1.0", in->pfm.width, in->pfm.height);
   size_t len = strlen(header);
@@ -160,7 +160,7 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
   {
     for(int i=0; i<in->pfm.width; i++)
     {
-      float tmp[3], tmp2[3];
+      float tmp[3];
       for(int k=0; k<3; k++) tmp[k] = in->pfm.pixel[3*(in->pfm.width*j + i) + k];
 
       // float exposure; adjust exposure
@@ -172,13 +172,9 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
       // gamut mapping 
       transform_gamutmap(tmp, c->gamutmap);
 
-      // apply curve
-      transform_curve(tmp, tmp2, c->curve);
+      // not applying curve or channel zeroing, outputting linear only.
 
-      // zero out channels
-      transform_channels(tmp2, c->channels);
-
-      fwrite(tmp2, sizeof(float), 3, out);
+      fwrite(tmp, sizeof(float), 3, out);
     }
   }
   fclose(out);
