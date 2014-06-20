@@ -231,6 +231,8 @@ int handleEvent(const SDL_Event *event, display_t *d)
   int ret = 0;
   switch (event->type)
   {
+    case SDL_ACTIVEEVENT:
+      return 1; // redraw
     case SDL_KEYDOWN:
       {
       const SDLKey keysym = event->key.keysym.sym;
