@@ -1,4 +1,6 @@
 #include "eu.h"
+#include "SDL/SDL_keysym.h"
+#include "SDL/SDL_keyboard.h"
 
 eu_t eu;
 
@@ -77,6 +79,7 @@ int onKeyPressed(keycode_t key)
   char title[256];
   float x, y;
   pointer_to_image(&x, &y);
+  const int shift = SDL_GetModState() & KMOD_SHIFT;
   switch(key)
   {
     case KeyOne: // toggle 1:1 and 1:2
@@ -95,6 +98,10 @@ int onKeyPressed(keycode_t key)
       eu.conv.roi.scale = fmaxf(eu.display->width/(float)fileinput_width(eu.file+eu.current_file),
           eu.display->height/(float)fileinput_height(eu.file+eu.current_file));
       eu.conv.roi.x = eu.conv.roi.y = 0;
+      return 1;
+
+    case KeyF: // flag/unflag for comparison
+      eu.file[eu.current_file].flag ^= 1;
       return 1;
 
     case KeyR: // red channel
@@ -134,26 +141,28 @@ int onKeyPressed(keycode_t key)
 
     case KeyDown:
     case KeyRight:
-      if(eu.current_file < eu.num_files-1)
+      do
       {
+        if(eu.current_file >= eu.num_files-1) break;
         eu.current_file++;
-        snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
-        display_title(eu.display, title);
-        show_metadata();
-        return 1;
       }
-      return 0;
+      while(shift && !eu.file[eu.current_file].flag);
+      snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
+      display_title(eu.display, title);
+      show_metadata();
+      return 1;
     case KeyLeft:
     case KeyUp:
-      if(eu.current_file > 0)
+      do
       {
+        if(eu.current_file == 0) break;
         eu.current_file--;
-        snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
-        display_title(eu.display, title);
-        show_metadata();
-        return 1;
       }
-      return 0;
+      while(shift && !eu.file[eu.current_file].flag);
+      snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
+      display_title(eu.display, title);
+      show_metadata();
+      return 1;
 
     case KeyE:
       eu.gui.dragging = 2;

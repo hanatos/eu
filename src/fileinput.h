@@ -63,6 +63,8 @@ typedef struct fileinput_t
   size_t data_size;    // size of file
   char filename[1024]; // buffer file name
 
+  int flag;            // flagged for comparison?
+
   fileinput_pfm_t pfm; // only supported format so far
 }
 fileinput_t;
@@ -89,6 +91,7 @@ static inline void fileinput_close(fileinput_t *in)
 /* open input file via mmap, to not consume any memory if we don't need it. */
 static inline int fileinput_open(fileinput_t *in, const char *filename)
 {
+  in->flag = 0;
   in->data = 0;
   in->fd = open(filename, O_RDONLY);
   (void)strncpy(in->filename, filename, 1024);
