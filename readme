@@ -10,30 +10,4 @@ of the window), all files are mmapped and worked on directly. this is also
 the reason why so far it only supports pfm, but other formats should
 be possible, too. heavy compression will make it very inefficient though.
 
-usage:
-
- eu [many.pfm files]
-
-some features are hinted at by the [h]elp text overlay:
-
-[e]+mouse drag: adjust exposure
-[1] toggle 1:1 and 1:2 zoom
-[2] zoom to fit
-[3] zoom to fill
-[r] show only red channel
-[g]
-[b]
-[c] back to color channels
-[arrow keys] switch image
-[h] toggle help overlay
-[q][esc] quit
-[m] toggle gamut mapping method
-[p] toggle output color profile
-[i] toggle input color profile (xyz and pass through)
-[f] flag image (jump between flagged with shift-arrow keys)
-
-
-build:
-
- edit config.mk (example supplied) to match your screen profile if you want one
- make
+eu is (c) 2014 johannes hanika and published as GPLv3.

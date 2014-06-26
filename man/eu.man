@@ -1,0 +1,67 @@
+.TH eu 1 "" eu ""
+.SH eu pfm image file viewer
+.P
+.I
+eu
+is a no-bs color managed pfm viewer with support for xyz input and custom color profiles for output.
+.P
+the name
+.I
+eu
+is chosen because it is short and extremely fast to type
+on a dvorak keyboard (homerow left hand, right hand is presumably copy-
+pasting the file name argument with the mouse). don't like it: rename
+your binary.
+.P
+eu needs next to no resources (one uint8_t frontbuffer, just the resolution
+of the window), all files are mmapped and worked on directly. this is also
+the reason why so far it only supports pfm, but other formats should
+be possible, too. heavy compression will make it very inefficient though.
+.P
+usage:
+.P
+ eu [many.pfm files]
+.P
+some features are hinted at by the [h]elp text overlay:
+.P
+[e]+mouse drag: adjust exposure
+.P
+[1] toggle 1:1 and 1:2 zoom
+.P
+[2] zoom to fit
+.P
+[3] zoom to fill
+.P
+[r] show only red channel
+.P
+[g]
+.P
+[b]
+.P
+[c] back to color channels
+.P
+[arrow keys] switch image
+.P
+[h] toggle help overlay
+.P
+[q][esc] quit
+.P
+[m] toggle gamut mapping method
+.P
+[p] toggle output color profile
+.P
+[i] toggle input color profile (xyz and pass through)
+.P
+[f] flag image (jump between flagged with shift-arrow keys)
+.SH building
+.P
+edit `config.mk' (example supplied) to match your screen profile if you want one. then type `make'.
+.SH batch mode
+.P
+ eu input.pfm -o output.pfm
+.P
+will process input.pfm to output.pfm using the last active processing settings from interactive use. will process full-res image.
+.SH files
+.P
+~/.config/eu/eurc is a binary dump of last used settings.
+

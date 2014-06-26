@@ -24,6 +24,7 @@ eu: Makefile src/*.c src/*.h
 install: eu
 	cp -f eu ${PREFIX}/bin/
 	cp -f eu.complete /etc/bash_completion.d/eu
+	gzip -c man/eu.man > ${PREFIX}/share/man/man1/eu.1.gz
 
 clean:
 	rm -f eu
