@@ -28,7 +28,9 @@ some features are hinted at by the [h]elp text overlay:
 [h] toggle help overlay
 [q][esc] quit
 [m] toggle gamut mapping method
-[p] toggle color profile
+[p] toggle output color profile
+[i] toggle input color profile (xyz and pass through)
+[f] flag image (jump between flagged with shift-arrow keys)
 
 
 build:

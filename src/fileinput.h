@@ -194,12 +194,14 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
 static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *c, uint8_t *buf)
 {
   double start = _time_wallclock();
+  const int32_t roix = CLAMP(c->roi.x, 0, in->pfm.width  - c->roi_out.w/c->roi.scale - 1);
+  const int32_t roiy = CLAMP(c->roi.y, 0, in->pfm.height - c->roi_out.h/c->roi.scale - 1);
   // skip dead frames
   if(in->fd < 0) return 1;
   const float scalex = 1.0f/c->roi.scale;
   const float scaley = 1.0f/c->roi.scale;
-  int32_t ix2 = MAX(c->roi.x, 0);
-  int32_t iy2 = MAX(c->roi.y, 0);
+  int32_t ix2 = roix;
+  int32_t iy2 = roiy;
   int32_t ibw = in->pfm.width, ibh = in->pfm.height;
   int32_t obw = c->roi_out.w, obh = c->roi_out.h;
   int32_t ow = c->roi_out.w, oh = c->roi_out.h;
