@@ -7,9 +7,9 @@
 #include "colorout_custom.h"
 
 // NaN-safe clamping (NaN compares false, and will thus result in H)
-#define CLAMP(A, L, H) ((A) > (L) ? ((A) < (H) ? (A) : (H)) : (L))
-#define MAX(A, B) ((A) < (B) ? (B) : (A))
-#define MIN(A, B) ((A) > (B) ? (B) : (A))
+#define CLAMP(A, L, H) (((A) > (L)) ? (((A) < (H)) ? (A) : (H)) : (L))
+#define MAX(A, B) (((A) < (B)) ? (B) : (A))
+#define MIN(A, B) (((A) > (B)) ? (B) : (A))
 
 
 typedef enum transform_channels_t

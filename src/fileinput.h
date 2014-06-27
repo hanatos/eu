@@ -194,8 +194,8 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
 static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *c, uint8_t *buf)
 {
   double start = _time_wallclock();
-  const int32_t roix = CLAMP(c->roi.x, 0, in->pfm.width  - c->roi_out.w/c->roi.scale - 1);
-  const int32_t roiy = CLAMP(c->roi.y, 0, in->pfm.height - c->roi_out.h/c->roi.scale - 1);
+  const int32_t roix = CLAMP(c->roi.x, 0, MAX(0, in->pfm.width  - c->roi_out.w/c->roi.scale - 1));
+  const int32_t roiy = CLAMP(c->roi.y, 0, MAX(0, in->pfm.height - c->roi_out.h/c->roi.scale - 1));
   // skip dead frames
   if(in->fd < 0) return 1;
   const float scalex = 1.0f/c->roi.scale;
@@ -209,8 +209,6 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
   int32_t oy2 = MAX(0, (c->roi_out.h-in->pfm.height*c->roi.scale)*.5f);
   int32_t oh2 = MIN(MIN(oh, MAX(0, (ibh - iy2)/scaley)), MAX(0, obh - oy2));
   int32_t ow2 = MIN(MIN(ow, MAX(0, (ibw - ix2)/scalex)), MAX(0, obw - ox2));
-  ix2 = CLAMP(ix2, 0, ibw - ow2*scalex);
-  iy2 = CLAMP(iy2, 0, ibh - oh2*scaley);
   assert((int)(ix2 + ow2*scalex) <= ibw);
   assert((int)(iy2 + oh2*scaley) <= ibh);
   assert(ox2 + ow2 <= obw);
