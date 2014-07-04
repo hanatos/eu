@@ -39,6 +39,19 @@ eu_t;
 
 static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 {
+  // find dimensions of window:
+  for(int k=1;k<argc;k++)
+  {
+    if(!strcmp(arg[k], "-w"))
+    {
+      if(++k < argc) wd = atol(arg[k]);
+    }
+    else if(!strcmp(arg[k], "-h"))
+    {
+      if(++k < argc) ht = atol(arg[k]);
+    }
+  }
+
   eu->display = display_open(PROG_NAME, wd, ht);
 
   memset(&eu->gui, 0, sizeof(eu_gui_state_t));
@@ -81,7 +94,11 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->file = (fileinput_t *)aligned_alloc(16, (argc-1)*sizeof(fileinput_t));
   for(int k=1;k<argc;k++)
   {
-    if(!strcmp(arg[k], "-o"))
+    if(!strcmp(arg[k], "-w") || !strcmp(arg[k], "-h"))
+    {
+      k++;
+    }
+    else if(!strcmp(arg[k], "-o"))
     {
       k++;
       if(k < argc)
