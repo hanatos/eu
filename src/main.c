@@ -139,6 +139,21 @@ int onKeyPressed(keycode_t key)
       }
       return 1;
 
+    case KeyD: // dump buffer to file
+      {
+        FILE *f = fopen("dump.ppm", "wb");
+        if(f)
+        {
+          fprintf(f, "P6\n%d %d\n255\n", eu.display->width, eu.display->height);
+          size_t w = fwrite(eu.pixels, 3*sizeof(uint8_t), eu.display->width*eu.display->height, f);
+          fclose(f);
+          if(w != eu.display->width*eu.display->height)
+            display_print(eu.display, 0, 0, "failed to write dump.ppm");
+          else
+            display_print(eu.display, 0, 0, "dumped screen buffer to dump.ppm");
+        }
+      }
+
     case KeyDown:
     case KeyRight:
       do
