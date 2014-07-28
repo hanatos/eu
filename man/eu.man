@@ -52,6 +52,8 @@ some features are hinted at by the [h]elp text overlay:
 .P
 [i] toggle input color profile (xyz and pass through)
 .P
+[t] toggle tone curve (linear and L/(L+1) tone mapping)
+.P
 [f] flag image (jump between flagged with shift-arrow keys)
 .P
 [d] dump current screen buffer (uint8_t) to dump.ppm

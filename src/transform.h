@@ -44,6 +44,7 @@ typedef enum transform_curve_t
 {
   s_none,          // straight output of colorout space
   s_canon,         // measured canon 5DII contrast curve
+  s_tonemap,       // L = L/(L+1) tonemapping
 }
 transform_curve_t;
 
@@ -188,9 +189,17 @@ static inline void transform_gamutmap(float *in, const transform_gamut_t c)
 static inline void transform_curve(const float *tmp, uint8_t *out, const transform_curve_t c)
 {
   // if(c == s_canon)
-  // TODO:
+  // TODO: {}
   // else
-  for(int k=0;k<3;k++)
-    out[k] = CLAMP(255.0f*tmp[k], 0, 255.0);
+  if(c == s_tonemap)
+  {
+    for(int k=0;k<3;k++)
+      out[k] = CLAMP(255.0f*tmp[k]/(tmp[k]+1.0f), 0, 255.0);
+  }
+  else
+  {
+    for(int k=0;k<3;k++)
+      out[k] = CLAMP(255.0f*tmp[k], 0, 255.0);
+  }
 }
 

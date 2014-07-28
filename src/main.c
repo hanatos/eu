@@ -188,7 +188,7 @@ int onKeyPressed(keycode_t key)
       if(eu.display->msg_len > 0)
         display_print(eu.display, 0, 0, "");
       else
-        display_print(eu.display, 0, 0, "[e]xpose [123] zoom [rgbc] channels [arrows] next/prev [h]elp [esc/q]uit [m] gamut map [p]rofile [s]idecar ");
+        display_print(eu.display, 0, 0, "[e]xpose\n[123] zoom\n[rgbc] channels\n[arrows] next/prev\n[h]elp\n[esc/q]uit\n[m] gamut map\n[p]rofile\n[s]idecar\n[t]onecurve");
       return 1;
 
     case KeyS:
@@ -204,6 +204,20 @@ int onKeyPressed(keycode_t key)
         return 1;
       }
       return 0;
+
+    case KeyT:
+      if(eu.conv.curve == s_none)
+      {
+        eu.conv.curve = s_tonemap;
+        display_print(eu.display, 0, 0, "curve: tonemap");
+        return 1;
+      }
+      else
+      {
+        eu.conv.curve = s_none;
+        display_print(eu.display, 0, 0, "curve: linear");
+        return 1;
+      }
 
     case KeyM:
       if(eu.conv.gamutmap == s_gamut_clamp)
