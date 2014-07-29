@@ -247,12 +247,15 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
 
       // float exposure; adjust exposure
       transform_exposure(tmp, f);
+      for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // color conversion
       transform_color(tmp, c->colorin, c->colorout);
+      for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // gamut mapping 
       transform_gamutmap(tmp, c->gamutmap);
+      for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // apply curve
       transform_curve(tmp, buf+3*idx, c->curve);

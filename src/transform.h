@@ -86,7 +86,7 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
 
     // apply tonecurve. adobe rgb does not have a linear toe slope, but gamma of:
     const float g = 1.f/2.19921875f;
-    for(int k=0;k<3;k++) in[k] = powf(in[k], g);
+    for(int k=0;k<3;k++) in[k] = copysignf(powf(fabsf(in[k]), g), in[k]);
   }
   else if(co == s_srgb)
   {
@@ -193,8 +193,28 @@ static inline void transform_curve(const float *tmp, uint8_t *out, const transfo
   // else
   if(c == s_tonemap)
   {
+    // tonemap in yuv: compress y and adjust uv saturation accordingly
+    const float M[] = {
+      0.299f, 0.587f, 0.114f,
+     -0.14713f, -0.28886f, 0.436f,
+      0.615f, -0.51499f, -0.10001f};
+    const float Mi[] = {
+      1.0f, 0.0f, 1.13983f,
+      1.0f, -0.39465f, -0.58060f,
+      1.0f, 2.03211f,  0.0f};
+    float yuv[3] = {0.0f};
+    for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++)
+      yuv[i] += M[3*i+j]*tmp[j];
+    for(int k=1;k<3;k++) yuv[k] /= fmaxf(0.01f, yuv[0]) + 1.0f;
+    yuv[0] = yuv[0]/(fmaxf(0.01f, yuv[0])+1.0f);
+    float rgb[3] = {0.0f};
+    for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++)
+      rgb[i] += Mi[3*i+j]*yuv[j];
+
     for(int k=0;k<3;k++)
-      out[k] = CLAMP(255.0f*tmp[k]/(tmp[k]+1.0f), 0, 255.0);
+      out[k] = CLAMP(255.0f*rgb[k], 0, 255.0);
   }
   else
   {
