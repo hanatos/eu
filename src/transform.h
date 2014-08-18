@@ -206,8 +206,11 @@ static inline void transform_curve(const float *tmp, uint8_t *out, const transfo
     for(int i=0;i<3;i++)
     for(int j=0;j<3;j++)
       yuv[i] += M[3*i+j]*tmp[j];
-    for(int k=1;k<3;k++) yuv[k] /= fmaxf(0.01f, yuv[0]) + 1.0f;
-    yuv[0] = yuv[0]/(fmaxf(0.01f, yuv[0])+1.0f);
+    // const float new_y = 2.0/3.0*yuv[0]/(yuv[0]+1.0f);
+    // log leads to more natural compression of highlights (still allows some clipping)
+    const float new_y = logf(yuv[0]+1.0f)/logf(10.0f);
+    for(int k=1;k<3;k++) yuv[k] *= CLAMP(new_y/yuv[0], 1e-5, 1e5);
+    yuv[0] = new_y;
     float rgb[3] = {0.0f};
     for(int i=0;i<3;i++)
     for(int j=0;j<3;j++)
