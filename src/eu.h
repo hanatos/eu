@@ -20,6 +20,8 @@ typedef struct eu_gui_state_t
   float button_x, button_y;
   int dragging;
   int show_metadata;
+  char input_string[256];
+  int input_string_len;
 }
 eu_gui_state_t;
 
@@ -81,6 +83,10 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
     }
     fclose(f);
   }
+
+  memset(eu->gui.input_string, 0, sizeof(eu->gui.input_string));
+  eu->gui.input_string_len = 0;
+  eu->gui.dragging = 0;
 
   eu->conv.roi.x = 0;
   eu->conv.roi.y = 0;

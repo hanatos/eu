@@ -80,7 +80,27 @@ int onKeyPressed(keycode_t key)
   float x, y;
   pointer_to_image(&x, &y);
   const int shift = SDL_GetModState() & KMOD_SHIFT;
-  switch(key)
+  if(eu.gui.dragging == 2)
+  { // exposure typing mode
+    eu.gui.input_string[eu.gui.input_string_len+1] = 0;
+    if(eu.gui.input_string_len + 1 >= 256 || key == KeyEnter)
+    {
+      eu.conv.exposure = atof(eu.gui.input_string);
+      display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
+      eu.gui.dragging = 0;
+      return 1;
+    }
+    else if(key >= KeyZero && key <= KeyNine)
+      eu.gui.input_string[eu.gui.input_string_len++] = '0' + key-KeyZero;
+    else if(key == KeyPeriod)
+      eu.gui.input_string[eu.gui.input_string_len++] = '.';
+    else if(key == KeyMinus)
+      eu.gui.input_string[eu.gui.input_string_len++] = '-';
+
+    display_print(eu.display, 0, 0, "exposure %s", eu.gui.input_string);
+    return 1; // redraw string
+  }
+  else switch(key)
   {
     case KeyOne: // toggle 1:1 and 1:2
       if(eu.conv.roi.scale == 1.0f)
@@ -181,6 +201,8 @@ int onKeyPressed(keycode_t key)
 
     case KeyE:
       eu.gui.dragging = 2;
+      eu.gui.input_string_len = 0;
+      eu.gui.input_string[0] = 0;
       display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
       return 1;
 
@@ -194,16 +216,6 @@ int onKeyPressed(keycode_t key)
     case KeyS:
       toggle_metadata();
       return 1;
-
-    case KeyZero:
-      if(eu.gui.dragging == 2)
-      {
-        eu.conv.exposure = 0.0f;
-        eu.gui.dragging = 0;
-        display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
-        return 1;
-      }
-      return 0;
 
     case KeyT:
       if(eu.conv.curve == s_none)

@@ -43,6 +43,7 @@ typedef enum
   KeyRight          = 0x27,      ///< right arrow key
   KeyDown           = 0x28,      ///< down arrow key
   KeyComma          = 0x2C,      ///< comma key ','
+  KeyMinus          = 0x2D,      ///< minus key '-'
   KeyPeriod         = 0x2E,      ///< period key '.'
   KeySlash          = 0x2F,      ///< slash key '/'
   KeyZero           = 0x30,      ///< zero key

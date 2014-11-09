@@ -62,8 +62,10 @@ int initializeKeyMaps()
     // functionKeys[i] = KeyUndefined;
   }
 
+  normalKeys[SDLK_RETURN] = KeyEnter;
   normalKeys[SDLK_SPACE] = KeySpace;
   normalKeys[SDLK_COMMA] = KeyComma;
+  normalKeys[SDLK_MINUS] = KeyMinus;
   normalKeys[SDLK_PERIOD] = KeyPeriod;
   normalKeys[SDLK_SLASH] = KeySlash;
   normalKeys[SDLK_0] = KeyZero;
