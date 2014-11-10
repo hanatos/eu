@@ -203,7 +203,7 @@ int onKeyPressed(keycode_t key)
       eu.gui.dragging = 2;
       eu.gui.input_string_len = 0;
       eu.gui.input_string[0] = 0;
-      display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
+      display_print(eu.display, 0, 0, "exposure ..");
       return 1;
 
     case KeyH:
