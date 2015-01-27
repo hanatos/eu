@@ -302,7 +302,7 @@ int display_pump_events(display_t *d)
 {
   SDL_Event event;
   while(SDL_PollEvent(&event)) handleEvent(&event, d);
-  return d->isShuttingDown;
+  return d->isShuttingDown ? -1 : 0;
 }
 
 int display_wait_event(display_t *d)

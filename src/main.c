@@ -199,6 +199,11 @@ int onKeyPressed(keycode_t key)
       show_metadata();
       return 1;
 
+    case KeySpace: // toggle play mode
+      eu.gui.play ^= 1;
+      display_print(eu.display, 0, 0, eu.gui.play ? "playing all frames" : "stopped");
+      return 1;
+
     case KeyE:
       eu.gui.dragging = 2;
       eu.gui.input_string_len = 0;
@@ -360,7 +365,18 @@ int main(int argc, char *arg[])
       display_update(eu.display, eu.pixels);
     }
     // get user input, wait for it if need be.
-    ret = display_wait_event(eu.display);
+    
+    if(eu.gui.play)
+    {
+      ret = display_pump_events(eu.display);
+      if(ret < 0) break;
+      if(eu.current_file >= eu.num_files-1) eu.current_file = 0;
+      else eu.current_file++;
+      ret = 1; // trigger redraw
+    }
+    else
+      ret = display_wait_event(eu.display);
+
     if(ret < 0) break;
   }
 

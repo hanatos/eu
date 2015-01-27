@@ -57,6 +57,8 @@ some features are hinted at by the [h]elp text overlay:
 [f] flag image (jump between flagged with shift-arrow keys)
 .P
 [d] dump current screen buffer (uint8_t) to dump.ppm
+.P
+[space] start/stop playing all frames
 .SH building
 .P
 edit `config.mk' (example supplied) to match your screen profile if you want one. then type `make'.

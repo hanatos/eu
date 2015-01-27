@@ -11,7 +11,7 @@
 // this is true on a dvorak keyboard, where these are on the left homerow, middle + index fingers.
 // you might want to rename it to `df' on a qwerty keyboard:
 #define PROG_NAME "eu"
-#define PROG_VERSION 1
+#define PROG_VERSION 2
 
 typedef struct eu_gui_state_t
 {
@@ -20,6 +20,7 @@ typedef struct eu_gui_state_t
   float button_x, button_y;
   int dragging;
   int show_metadata;
+  int play;
   char input_string[256];
   int input_string_len;
 }
@@ -87,6 +88,7 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   memset(eu->gui.input_string, 0, sizeof(eu->gui.input_string));
   eu->gui.input_string_len = 0;
   eu->gui.dragging = 0;
+  eu->gui.play = 0;
 
   eu->conv.roi.x = 0;
   eu->conv.roi.y = 0;
