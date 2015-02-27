@@ -346,7 +346,7 @@ int main(int argc, char *arg[])
   }
 
   const int wd = 1024, ht = 576;
-  eu_init(&eu, wd, ht, argc, arg);
+  if(eu_init(&eu, wd, ht, argc, arg)) goto exit;
   eu.display->onKeyPressed = onKeyPressed;
   eu.display->onMouseMove = onMouseMove;
   eu.display->onMouseButtonDown = onMouseButtonDown;
@@ -380,7 +380,7 @@ int main(int argc, char *arg[])
     if(ret < 0) break;
   }
 
+exit:
   eu_cleanup(&eu);
-
   exit(0);
 }

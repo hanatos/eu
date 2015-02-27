@@ -40,7 +40,7 @@ typedef struct eu_t
 }
 eu_t;
 
-static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
+static inline int eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 {
   // find dimensions of window:
   for(int k=1;k<argc;k++)
@@ -54,8 +54,6 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
       if(++k < argc) ht = atol(arg[k]);
     }
   }
-
-  eu->display = display_open(PROG_NAME, wd, ht);
 
   memset(&eu->gui, 0, sizeof(eu_gui_state_t));
 
@@ -100,6 +98,7 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 
   eu->num_files = 0;
   eu->file = (fileinput_t *)aligned_alloc(16, (argc-1)*sizeof(fileinput_t));
+  int batch = 0;
   for(int k=1;k<argc;k++)
   {
     if(!strcmp(arg[k], "-w") || !strcmp(arg[k], "-h"))
@@ -111,6 +110,7 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
       k++;
       if(k < argc)
         fileinput_process(eu->file+k-3, &eu->conv, arg[k]);
+      batch = 1;
     }
     else
     {
@@ -123,12 +123,17 @@ static inline void eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
     }
   }
 
+  if(!batch) eu->display = display_open(PROG_NAME, wd, ht);
+  else eu->display = 0;
+
+
   // use dimensions of first file
   eu->conv.roi.w = fileinput_width(eu->file);
   eu->conv.roi.h = fileinput_height(eu->file);
   eu->current_file = 0;
 
   eu->pixels = (uint8_t *)aligned_alloc(16, wd*ht*3);
+  return batch;
 }
 
 static inline void eu_cleanup(eu_t *eu)
