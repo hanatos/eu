@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "colorout_custom.h"
-#include "curve.h"
 
 // NaN-safe clamping (NaN compares false, and will thus result in H)
 #define CLAMP(A, L, H) (((A) > (L)) ? (((A) < (H)) ? (A) : (H)) : (L))
