@@ -225,6 +225,12 @@ int onKeyPressed(keycode_t key)
     case KeyT:
       if(eu.conv.curve == s_none)
       {
+        eu.conv.curve = s_contrast;
+        display_print(eu.display, 0, 0, "curve: contrast s");
+        return 1;
+      }
+      else if(eu.conv.curve == s_contrast)
+      {
         eu.conv.curve = s_tonemap;
         display_print(eu.display, 0, 0, "curve: tonemap");
         return 1;

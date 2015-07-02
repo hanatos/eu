@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "colorout_custom.h"
+#include "curve.h"
 
 // NaN-safe clamping (NaN compares false, and will thus result in H)
 #define CLAMP(A, L, H) (((A) > (L)) ? (((A) < (H)) ? (A) : (H)) : (L))
@@ -43,7 +44,7 @@ transform_gamut_t;
 typedef enum transform_curve_t
 {
   s_none,          // straight output of colorout space
-  s_canon,         // measured canon 5DII contrast curve
+  s_contrast,      // contrast s curve
   s_tonemap,       // L = L/(L+1) tonemapping
 }
 transform_curve_t;
@@ -188,10 +189,18 @@ static inline void transform_gamutmap(float *in, const transform_gamut_t c)
 
 static inline void transform_curve(const float *tmp, uint8_t *out, const transform_curve_t c)
 {
-  // if(c == s_canon)
-  // TODO: {}
-  // else
-  if(c == s_tonemap)
+  if(c == s_contrast)
+  {
+    // for(int k=0;k<3;k++)
+      // out[k] = CLAMP(255.0f*canon_curve(tmp[k]), 0, 255.0);
+    for(int k=0;k<3;k++)
+    {
+      const float a = 0.5f;
+      const float f = (1.0f-a)*tmp[k] + a*(.5f - cosf(CLAMP(tmp[k], 0.0f, 1.0f) * M_PI) * .5f);
+      out[k] = CLAMP(255.0f*f, 0, 255.0);
+    }
+  }
+  else if(c == s_tonemap)
   {
     // tonemap in yuv: compress y and adjust uv saturation accordingly
     const float M[] = {
