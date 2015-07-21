@@ -379,6 +379,7 @@ int main(int argc, char *arg[])
       if(eu.current_file >= eu.num_files-1) eu.current_file = 0;
       else eu.current_file++;
       ret = 1; // trigger redraw
+      onKeyPressed(KeyTwo); // scale to fit
     }
     else
       ret = display_wait_event(eu.display);
