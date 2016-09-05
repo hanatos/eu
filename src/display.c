@@ -394,9 +394,9 @@ int display_update(display_t *d, uint8_t* pixels)
         {
           for (int j = 0; j < 16; j++)
           {
-            int y = d->height - d->msg_y + j - 1 - line*16;
+            int y = (d->msg_y - j) + line*16;
             if ((y >= d->height) || (y < 0)) goto render_message_out;
-            // : respect fill ratio for u2581..u2588
+            // respect fill ratio for u2581..u2588
             if(j < fill) for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
             else         for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] *= 0.2;
           }
@@ -414,7 +414,7 @@ int display_update(display_t *d, uint8_t* pixels)
           unsigned char cLine = font9x16[charPos+x];			
           for (int i = 0; i < 8; i++)
           {
-            int y = d->height - (d->msg_y - (15 - (i + (x&1)*8))) - 1 - line*16;
+            int y = (d->msg_y - (15 - (i + (x&1)*8))) + line*16;
             if ((y >= d->height) || (y < 0)) goto render_message_out;
             if (cLine & (1<<(7-i)))
               for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
@@ -431,10 +431,10 @@ render_message_out:
 #if 1//def TEXTURE
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, d->width, d->height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
   glBegin(GL_QUADS);
-  glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, 0.0);
-  glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, 1.0, 0.0);
-  glTexCoord2f(1.0, 1.0); glVertex3f(1.0, 1.0, 0.0);
-  glTexCoord2f(1.0, 0.0); glVertex3f(1.0, -1.0, 0.0);
+  glTexCoord2f(0.0, 0.0); glVertex3f(-1.0,  1.0, 0.0);
+  glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, -1.0, 0.0);
+  glTexCoord2f(1.0, 1.0); glVertex3f( 1.0, -1.0, 0.0);
+  glTexCoord2f(1.0, 0.0); glVertex3f( 1.0,  1.0, 0.0);
   glEnd();
 #endif
 
