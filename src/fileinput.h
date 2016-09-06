@@ -51,7 +51,7 @@ fileinput_conversion_t;
 typedef struct fileinput_pfm_t
 {
   int width, height;     // dimensions of the image
-  float *progressions;   // optional scale read from end of file
+  float *scale;          // optional scale read from end of file
   float *pixel;          // pointer to start of pixel data
 }
 fileinput_pfm_t;
@@ -117,9 +117,9 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
   in->pfm.pixel = (float*)(++endptr); // remove second newline
 
   // got extra data at the end?
-  in->pfm.progressions = 0;
+  in->pfm.scale = 0;
   if(in->data_size - sizeof(float)*(in->pfm.pixel - (float *)in->data) > sizeof(float)*3*in->pfm.width*in->pfm.height)
-    in->pfm.progressions = in->pfm.pixel + in->pfm.width * in->pfm.height * 3;
+    in->pfm.scale = in->pfm.pixel + in->pfm.width * in->pfm.height * 3;
 
   // while writing make sure the pixel data is 16-byte aligned for sse.
   // achieve this by padding up the idiotic scale factor line in the header with additional 0s
@@ -154,7 +154,7 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
   // skip dead frames
   if(in->fd < 0) return 1;
 
-  const float f = (in->pfm.progressions ? 1.0f / in->pfm.progressions[0] : 1.0f) * powf(2.0f, c->exposure);
+  const float f = (in->pfm.scale ? in->pfm.scale[0] : 1.0f) * powf(2.0f, c->exposure);
 
   char header[1024];
   snprintf(header, 1024, "PF\n%d %d\n-1.0", in->pfm.width, in->pfm.height);
@@ -222,7 +222,7 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
   assert(ix2 >= 0 && iy2 >= 0 && ox2 >= 0 && oy2 >= 0);
   float x = ix2, y = iy2;
 
-  const float f = (in->pfm.progressions ? 1.0f / in->pfm.progressions[0] : 1.0f) * powf(2.0f, c->exposure);
+  const float f = (in->pfm.scale ? in->pfm.scale[0] : 1.0f) * powf(2.0f, c->exposure);
 
   // TODO parallel
   // fill top/bottom borders:
