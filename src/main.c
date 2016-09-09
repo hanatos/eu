@@ -328,7 +328,7 @@ int onMouseMove(mouse_t *mouse)
     float diff_x = (eu.gui.pointer.x - eu.gui.pointer_button.x - eu.conv.roi_out.x)/eu.conv.roi.scale;
     float diff_y = (eu.gui.pointer.y - eu.gui.pointer_button.y - eu.conv.roi_out.y)/eu.conv.roi.scale;
     eu.conv.roi.x = eu.gui.button_x - diff_x;
-    eu.conv.roi.y = eu.gui.button_y + diff_y;
+    eu.conv.roi.y = eu.gui.button_y - diff_y;
     return 1;
   }
   // all dragging should refresh
