@@ -179,7 +179,8 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
       transform_color(tmp, c->colorin, c->colorout);
 
       // gamut mapping 
-      transform_gamutmap(tmp, c->gamutmap);
+      if(c->colorin != s_passthrough)
+        transform_gamutmap(tmp, c->gamutmap);
 
       // not applying curve or channel zeroing, outputting linear only.
 
@@ -260,7 +261,8 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
       for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // gamut mapping 
-      transform_gamutmap(tmp, c->gamutmap);
+      if(c->colorin != s_passthrough)
+        transform_gamutmap(tmp, c->gamutmap);
       for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // apply curve
