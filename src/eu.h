@@ -23,6 +23,7 @@ typedef struct eu_gui_state_t
   int play;
   char input_string[256];
   int input_string_len;
+  int batch;
 }
 eu_gui_state_t;
 
@@ -39,6 +40,43 @@ typedef struct eu_t
   eu_gui_state_t gui;
 }
 eu_t;
+
+static inline int eu_load_profile(eu_t *eu, const char *filename)
+{
+  const char *home = getenv("HOME");
+  char file[1024];
+  snprintf(file, 1024, "%s/.config/eu/%s", home, filename);
+  FILE *f = fopen(file, "rb");
+  if(f)
+  {
+    const int wd = eu->conv.roi_out.w, ht = eu->conv.roi_out.h;
+    int v;
+    fread(&v, 1, sizeof(int), f);
+    if(v == PROG_VERSION)
+    {
+      fread(&eu->conv, 1, sizeof(fileinput_conversion_t), f);
+      fread(&eu->gui, 1, sizeof(eu_gui_state_t), f);
+    }
+    fclose(f);
+
+    memset(eu->gui.input_string, 0, sizeof(eu->gui.input_string));
+    eu->gui.input_string_len = 0;
+    eu->gui.dragging = 0;
+    eu->gui.play = 0;
+
+    eu->conv.roi.x = 0;
+    eu->conv.roi.y = 0;
+    eu->conv.roi.scale = 1.0f;
+    eu->conv.roi_out.x = 0;
+    eu->conv.roi_out.y = 0;
+    eu->conv.roi_out.w = wd;
+    eu->conv.roi_out.h = ht;
+
+    return 0;
+  }
+  fprintf(stderr, "[eu] could not read profile `%s'\n", file);
+  return 1;
+}
 
 static inline int eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
 {
@@ -66,51 +104,28 @@ static inline int eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->conv.gamutmap = s_gamut_clamp;
   eu->conv.curve = s_none;
   eu->conv.channels = s_rgb;
-
-  const char *home = getenv("HOME");
-  char file[1024];
-  snprintf(file, 1024, "%s/.config/eu/eurc", home);
-  FILE *f = fopen(file, "rb");
-  if(f)
-  {
-    int v;
-    fread(&v, 1, sizeof(int), f);
-    if(v == PROG_VERSION)
-    {
-      fread(&eu->conv, 1, sizeof(fileinput_conversion_t), f);
-      fread(&eu->gui, 1, sizeof(eu_gui_state_t), f);
-    }
-    fclose(f);
-  }
-
-  memset(eu->gui.input_string, 0, sizeof(eu->gui.input_string));
-  eu->gui.input_string_len = 0;
-  eu->gui.dragging = 0;
-  eu->gui.play = 0;
-
-  eu->conv.roi.x = 0;
-  eu->conv.roi.y = 0;
-  eu->conv.roi.scale = 1.0f;
-  eu->conv.roi_out.x = 0;
-  eu->conv.roi_out.y = 0;
   eu->conv.roi_out.w = wd;
   eu->conv.roi_out.h = ht;
 
+  eu_load_profile(eu, "eurc");
+
   eu->num_files = 0;
   eu->file = (fileinput_t *)aligned_alloc(16, (argc-1)*sizeof(fileinput_t));
-  int batch = 0;
+  eu->gui.batch = 0;
   for(int k=1;k<argc;k++)
   {
     if(!strcmp(arg[k], "-w") || !strcmp(arg[k], "-h"))
     {
       k++;
     }
+    else if(!strcmp(arg[k], "-p") && k+1 < argc) eu_load_profile(eu, arg[++k]);
     else if(!strcmp(arg[k], "-o"))
     {
       k++;
+      assert(eu->num_files > 0);
       if(k < argc)
-        fileinput_process(eu->file+k-3, &eu->conv, arg[k]);
-      batch = 1;
+        fileinput_process(eu->file, &eu->conv, arg[k]);
+      eu->gui.batch = 1;
     }
     else
     {
@@ -123,7 +138,7 @@ static inline int eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
     }
   }
 
-  if(!batch) eu->display = display_open(PROG_NAME, wd, ht);
+  if(!eu->gui.batch) eu->display = display_open(PROG_NAME, wd, ht);
   else eu->display = 0;
 
 
@@ -133,7 +148,7 @@ static inline int eu_init(eu_t *eu, int wd, int ht, int argc, char *arg[])
   eu->current_file = 0;
 
   eu->pixels = (uint8_t *)aligned_alloc(16, wd*ht*3);
-  return batch;
+  return eu->gui.batch;
 }
 
 static inline void eu_cleanup(eu_t *eu)
@@ -144,14 +159,17 @@ static inline void eu_cleanup(eu_t *eu)
   snprintf(dir, 1024, "%s/.config/eu", home);
   mkdir(dir, 0775);
   snprintf(dir, 1024, "%s/.config/eu/eurc", home);
-  FILE *f = fopen(dir, "wb");
-  if(f)
+  if(!eu->gui.batch)
   {
-    int v = PROG_VERSION;
-    fwrite(&v, 1, sizeof(int), f);
-    fwrite(&eu->conv, 1, sizeof(fileinput_conversion_t), f);
-    fwrite(&eu->gui, 1, sizeof(eu_gui_state_t), f);
-    fclose(f);
+    FILE *f = fopen(dir, "wb");
+    if(f)
+    {
+      int v = PROG_VERSION;
+      fwrite(&v, 1, sizeof(int), f);
+      fwrite(&eu->conv, 1, sizeof(fileinput_conversion_t), f);
+      fwrite(&eu->gui, 1, sizeof(eu_gui_state_t), f);
+      fclose(f);
+    }
   }
   for(int k=0;k<eu->num_files;k++)
     fileinput_close(eu->file+k);
