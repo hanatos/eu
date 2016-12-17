@@ -60,6 +60,29 @@ static inline void transform_channels(uint8_t *in, const int c)
   for(int k=0;k<3;k++) in[k] = in[c];
 }
 
+
+static inline float
+fastpow2(float p)
+{
+  float clipp = (p < -126) ? -126.0f : p;
+  union { uint32_t i; float f; } v = { (uint32_t) ( (1 << 23) * (clipp + 126.94269504f) ) };
+  return v.f;
+}
+
+static inline float
+fastlog2(float x)
+{
+  union { float f; uint32_t i; } vx = { x };
+  float y = vx.i;
+  y *= 1.1920928955078125e-7f;
+  return y - 126.94269504f;
+}
+
+static inline float fast_powf(float a, float b)
+{
+  return fastpow2(b * fastlog2(a));
+}
+
 static inline void transform_color(float *in, const transform_color_t ci, const transform_color_t co)
 {
   if(ci == s_passthrough) return;
@@ -86,7 +109,7 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
 
     // apply tonecurve. adobe rgb does not have a linear toe slope, but gamma of:
     const float g = 1.f/2.19921875f;
-    for(int k=0;k<3;k++) in[k] = copysignf(powf(fabsf(in[k]), g), in[k]);
+    for(int k=0;k<3;k++) in[k] = copysignf(fast_powf(fabsf(in[k]), g), in[k]);
   }
   else if(co == s_srgb)
   {
@@ -112,7 +135,7 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
       g = gamma*(1.0-linear)/(1.0-gamma*linear);
       a = 1.0/(1.0+linear*(g-1));
       b = linear*(g-1)*a;
-      c = powf(a*linear+b, g)/linear;
+      c = fast_powf(a*linear+b, g)/linear;
     }
     else
     {
@@ -123,7 +146,7 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
     {
       float f = in[i];
       if(f < linear) f = c*f;
-      else f = powf(a*f+b, g);
+      else f = fast_powf(a*f+b, g);
       in[i] = f;
     }
   }
