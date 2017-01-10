@@ -1,10 +1,4 @@
 #include "display.h"
-#include <stdlib.h>
-#include <GL/glew.h>
-#include <GL/gl.h>
-#include <SDL/SDL.h>
-
-
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,19 +7,18 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
-#ifdef __SSE__
-  #include <xmmintrin.h>
-#endif
+#include <xmmintrin.h>
 
-#define keyMapSize 320
+static const int eventMask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ButtonMotionMask;
+#define keyMapSize 256
 
-keycode_t normalKeys[keyMapSize];
-// keycode_t functionKeys[keyMapSize];
-// char keyIsPressed[keyMapSize];
-// char keyIsReleased[keyMapSize];
+static keycode_t normalKeys[keyMapSize];
+static keycode_t functionKeys[keyMapSize];
+static char keyIsPressed[keyMapSize];
+static char keyIsReleased[keyMapSize];
 
-int keyMapsInitialized = 0;
-const unsigned char font9x16[] = {
+static int keyMapsInitialized = 0;
+static const unsigned char font9x16[] = {
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,30,0,63,176,63,176,30,0,0,0,0,0,0,0,0,0,112,0,120,0,0,0,0,0,120,0,112,0,0,0,0,0,4,64,31,240,31,240,4,64,
 4,64,31,240,31,240,4,64,0,0,28,96,62,48,34,16,226,28,226,28,51,240,25,224,0,0,0,0,24,48,24,96,0,192,1,128,3,0,6,0,12,48,24,48,0,0,1,224,27,240,62,16,39,16,61,224,27,240,2,16,0,0,0,0,
 0,0,8,0,120,0,112,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,192,31,224,48,48,32,16,0,0,0,0,0,0,0,0,0,0,32,16,48,48,31,224,15,192,0,0,0,0,0,0,1,0,5,64,7,192,3,128,3,128,
@@ -59,60 +52,151 @@ int initializeKeyMaps()
   for (int i = 0; i < keyMapSize; ++i)
   {
     normalKeys[i] = KeyUndefined;
-    // functionKeys[i] = KeyUndefined;
+    functionKeys[i] = KeyUndefined;
+    keyIsPressed[i] = 0;
+    keyIsReleased[i] = 0;
   }
 
-  normalKeys[SDLK_RETURN] = KeyEnter;
-  normalKeys[SDLK_SPACE] = KeySpace;
-  normalKeys[SDLK_COMMA] = KeyComma;
-  normalKeys[SDLK_MINUS] = KeyMinus;
-  normalKeys[SDLK_PERIOD] = KeyPeriod;
-  normalKeys[SDLK_SLASH] = KeySlash;
-  normalKeys[SDLK_0] = KeyZero;
-  normalKeys[SDLK_1] = KeyOne;
-  normalKeys[SDLK_2] = KeyTwo;
-  normalKeys[SDLK_3] = KeyThree;
-  normalKeys[SDLK_4] = KeyFour;
-  normalKeys[SDLK_5] = KeyFive;
-  normalKeys[SDLK_6] = KeySix;
-  normalKeys[SDLK_7] = KeySeven;
-  normalKeys[SDLK_8] = KeyEight;
-  normalKeys[SDLK_9] = KeyNine;
-  normalKeys[SDLK_SEMICOLON] = KeySemiColon;
-  normalKeys[SDLK_EQUALS] = KeyEquals;
-  normalKeys[SDLK_a] = KeyA;
-  normalKeys[SDLK_b] = KeyB;
-  normalKeys[SDLK_c] = KeyC;
-  normalKeys[SDLK_d] = KeyD;
-  normalKeys[SDLK_e] = KeyE;
-  normalKeys[SDLK_f] = KeyF;
-  normalKeys[SDLK_g] = KeyG;
-  normalKeys[SDLK_h] = KeyH;
-  normalKeys[SDLK_i] = KeyI;
-  normalKeys[SDLK_j] = KeyJ;
-  normalKeys[SDLK_k] = KeyK;
-  normalKeys[SDLK_l] = KeyL;
-  normalKeys[SDLK_m] = KeyM;
-  normalKeys[SDLK_n] = KeyN;
-  normalKeys[SDLK_o] = KeyO;
-  normalKeys[SDLK_p] = KeyP;
-  normalKeys[SDLK_q] = KeyQ;
-  normalKeys[SDLK_r] = KeyR;
-  normalKeys[SDLK_s] = KeyS;
-  normalKeys[SDLK_t] = KeyT;
-  normalKeys[SDLK_u] = KeyU;
-  normalKeys[SDLK_v] = KeyV;
-  normalKeys[SDLK_w] = KeyW;
-  normalKeys[SDLK_x] = KeyX;
-  normalKeys[SDLK_y] = KeyY;
-  normalKeys[SDLK_z] = KeyZ;
-  normalKeys[SDLK_DOWN] = KeyDown;
-  normalKeys[SDLK_RIGHT] = KeyRight;
-  normalKeys[SDLK_UP] = KeyUp;
-  normalKeys[SDLK_LEFT] = KeyLeft;
-  normalKeys[SDLK_LEFTBRACKET] = KeyOpenBracket;
-  normalKeys[SDLK_BACKSLASH] = KeyBackSlash;
-  normalKeys[SDLK_RIGHTBRACKET] = KeyCloseBracket;
+  normalKeys[XK_space] = KeySpace;
+  normalKeys[XK_comma] = KeyComma;
+  normalKeys[XK_period] = KeyPeriod;
+  normalKeys[XK_slash] = KeySlash;
+  normalKeys[XK_0] = KeyZero;
+  normalKeys[XK_1] = KeyOne;
+  normalKeys[XK_2] = KeyTwo;
+  normalKeys[XK_3] = KeyThree;
+  normalKeys[XK_4] = KeyFour;
+  normalKeys[XK_5] = KeyFive;
+  normalKeys[XK_6] = KeySix;
+  normalKeys[XK_7] = KeySeven;
+  normalKeys[XK_8] = KeyEight;
+  normalKeys[XK_9] = KeyNine;
+  normalKeys[XK_semicolon] = KeySemiColon;
+  normalKeys[XK_equal] = KeyEquals;
+  normalKeys[XK_a] = KeyA;
+  normalKeys[XK_b] = KeyB;
+  normalKeys[XK_c] = KeyC;
+  normalKeys[XK_d] = KeyD;
+  normalKeys[XK_e] = KeyE;
+  normalKeys[XK_f] = KeyF;
+  normalKeys[XK_g] = KeyG;
+  normalKeys[XK_h] = KeyH;
+  normalKeys[XK_i] = KeyI;
+  normalKeys[XK_j] = KeyJ;
+  normalKeys[XK_k] = KeyK;
+  normalKeys[XK_l] = KeyL;
+  normalKeys[XK_m] = KeyM;
+  normalKeys[XK_n] = KeyN;
+  normalKeys[XK_o] = KeyO;
+  normalKeys[XK_p] = KeyP;
+  normalKeys[XK_q] = KeyQ;
+  normalKeys[XK_r] = KeyR;
+  normalKeys[XK_s] = KeyS;
+  normalKeys[XK_t] = KeyT;
+  normalKeys[XK_u] = KeyU;
+  normalKeys[XK_v] = KeyV;
+  normalKeys[XK_w] = KeyW;
+  normalKeys[XK_x] = KeyX;
+  normalKeys[XK_y] = KeyY;
+  normalKeys[XK_z] = KeyZ;
+  normalKeys[XK_bracketleft] = KeyOpenBracket;
+  normalKeys[XK_backslash] = KeyBackSlash;
+  normalKeys[XK_bracketright] = KeyCloseBracket;
+
+  functionKeys[0xff & XK_BackSpace] = KeyBackSpace;
+  functionKeys[0xff & XK_Tab] = KeyTab;
+  functionKeys[0xff & XK_Linefeed] = KeyUndefined;
+  functionKeys[0xff & XK_Clear] = KeyClear;
+  functionKeys[0xff & XK_Return] = KeyEnter;
+  functionKeys[0xff & XK_Pause] = KeyPause;
+  functionKeys[0xff & XK_Scroll_Lock] = KeyScrollLock;
+  functionKeys[0xff & XK_Sys_Req] = KeyPrintScreen;
+  functionKeys[0xff & XK_Escape] = KeyEscape;
+  functionKeys[0xff & XK_Delete] = KeyDelete;
+  functionKeys[0xff & XK_Kanji] = KeyKanji;
+  functionKeys[0xff & XK_Kana_Shift] = KeyKana;
+  functionKeys[0xff & XK_Home] = KeyHome;
+  functionKeys[0xff & XK_Left] = KeyLeft;
+  functionKeys[0xff & XK_Up] = KeyUp;
+  functionKeys[0xff & XK_Right] = KeyRight;
+  functionKeys[0xff & XK_Down] = KeyDown;
+  functionKeys[0xff & XK_Prior] = KeyUndefined;
+  functionKeys[0xff & XK_Page_Up] = KeyPageUp;
+  functionKeys[0xff & XK_Next] = KeyUndefined;
+  functionKeys[0xff & XK_Page_Down] = KeyPageDown;
+  functionKeys[0xff & XK_End] = KeyEnd;
+  functionKeys[0xff & XK_Begin] = KeyUndefined;
+  functionKeys[0xff & XK_Select] = KeyUndefined;
+  functionKeys[0xff & XK_Print] = KeyUndefined;
+  functionKeys[0xff & XK_Execute] = KeyUndefined;
+  functionKeys[0xff & XK_Insert] = KeyInsert;
+  functionKeys[0xff & XK_Undo] = KeyUndefined;
+  functionKeys[0xff & XK_Redo] = KeyUndefined;
+  functionKeys[0xff & XK_Menu] = KeyUndefined;
+  functionKeys[0xff & XK_Find] = KeyUndefined;
+  functionKeys[0xff & XK_Cancel] = KeyCancel;
+  functionKeys[0xff & XK_Help] = KeyHelp;
+  functionKeys[0xff & XK_Break] = KeyUndefined;
+  functionKeys[0xff & XK_Mode_switch] = KeyModeChange;
+  functionKeys[0xff & XK_Num_Lock] = KeyNumLock;
+  functionKeys[0xff & XK_KP_Space] = KeySpace;
+  functionKeys[0xff & XK_KP_Tab] = KeyTab;
+  functionKeys[0xff & XK_KP_Enter] = KeyEnter;
+  functionKeys[0xff & XK_KP_F1] = KeyF1;
+  functionKeys[0xff & XK_KP_F2] = KeyF2;
+  functionKeys[0xff & XK_KP_F3] = KeyF3;
+  functionKeys[0xff & XK_KP_F4] = KeyF4;
+  functionKeys[0xff & XK_KP_Home] = KeyHome;
+  functionKeys[0xff & XK_KP_Left] = KeyLeft;
+  functionKeys[0xff & XK_KP_Right] = KeyRight;
+  functionKeys[0xff & XK_KP_Down] = KeyDown;
+  functionKeys[0xff & XK_KP_Prior] = KeyUndefined;
+  functionKeys[0xff & XK_KP_Page_Up] = KeyPageUp;
+  functionKeys[0xff & XK_KP_Next] = KeyUndefined;
+  functionKeys[0xff & XK_KP_Page_Down] = KeyPageDown;
+  functionKeys[0xff & XK_KP_End] = KeyEnd;
+  functionKeys[0xff & XK_KP_Begin] = KeyUndefined;
+  functionKeys[0xff & XK_KP_Insert] = KeyInsert;
+  functionKeys[0xff & XK_KP_Delete] = KeyDelete;
+  functionKeys[0xff & XK_KP_Equal] = KeyEquals;
+  functionKeys[0xff & XK_KP_Multiply] = KeyMultiply;
+  functionKeys[0xff & XK_KP_Add] = KeyAdd;
+  functionKeys[0xff & XK_KP_Separator] = KeySeparator;
+  functionKeys[0xff & XK_KP_Subtract] = KeySubtract;
+  functionKeys[0xff & XK_KP_Decimal] = KeyDecimal;
+  functionKeys[0xff & XK_KP_Divide] = KeyDivide;
+  functionKeys[0xff & XK_KP_0] = KeyNumPad0;
+  functionKeys[0xff & XK_KP_1] = KeyNumPad1;
+  functionKeys[0xff & XK_KP_2] = KeyNumPad2;
+  functionKeys[0xff & XK_KP_3] = KeyNumPad3;
+  functionKeys[0xff & XK_KP_4] = KeyNumPad4;
+  functionKeys[0xff & XK_KP_5] = KeyNumPad5;
+  functionKeys[0xff & XK_KP_6] = KeyNumPad6;
+  functionKeys[0xff & XK_KP_7] = KeyNumPad7;
+  functionKeys[0xff & XK_KP_8] = KeyNumPad8;
+  functionKeys[0xff & XK_KP_9] = KeyNumPad9;
+  functionKeys[0xff & XK_F1] = KeyF1;
+  functionKeys[0xff & XK_F2] = KeyF2;
+  functionKeys[0xff & XK_F3] = KeyF3;
+  functionKeys[0xff & XK_F4] = KeyF4;
+  functionKeys[0xff & XK_F5] = KeyF5;
+  functionKeys[0xff & XK_F6] = KeyF6;
+  functionKeys[0xff & XK_F7] = KeyF7;
+  functionKeys[0xff & XK_F8] = KeyF8;
+  functionKeys[0xff & XK_F9] = KeyF9;
+  functionKeys[0xff & XK_F10] = KeyF10;
+  functionKeys[0xff & XK_F11] = KeyF11;
+  functionKeys[0xff & XK_F12] = KeyF12;
+  functionKeys[0xff & XK_Shift_L] = KeyShift;
+  functionKeys[0xff & XK_Shift_R] = KeyShift;
+  functionKeys[0xff & XK_Control_L] = KeyControl;
+  functionKeys[0xff & XK_Control_R] = KeyControl;
+  functionKeys[0xff & XK_Caps_Lock] = KeyCapsLock;
+  functionKeys[0xff & XK_Shift_Lock] = KeyCapsLock;
+  functionKeys[0xff & XK_Meta_L] = KeyMeta;
+  functionKeys[0xff & XK_Meta_R] = KeyMeta;
+  functionKeys[0xff & XK_Alt_L] = KeyAlt;
+  functionKeys[0xff & XK_Alt_R] = KeyAlt;
   return 1;
 }
 
@@ -120,6 +204,13 @@ display_t *display_open(const char title[], int width, int height)
 {
   if(!keyMapsInitialized) keyMapsInitialized = initializeKeyMaps();
   display_t *d = (display_t*) malloc(sizeof(display_t));
+  d->mod_state = 0;
+
+  // let's open a display
+
+  d->display = XOpenDisplay(0);
+  if (!d->display)
+    return 0;
 
   d->width = width;
   d->height = height;
@@ -131,242 +222,297 @@ display_t *display_open(const char title[], int width, int height)
   d->onMouseButtonDown = NULL;
   d->onMouseMove = NULL;
   d->onClose = NULL;
+
+  const int screen = DefaultScreen(d->display);
+  Visual* visual = DefaultVisual(d->display, screen);
+  if (!visual)
+  {
+    display_close(d);
+    return 0;
+  }
+
+  // It gets messy when talking about color depths.
+  //
+  // For the image buffer, we either need 8, 16 or 32 bitsPerPixel.  8 bits we'll 
+  // never have (hopefully), 16 bits will be used for displayDepth 15 & 16, and 
+  // 32 bits must be used for depths 24 and 32.
+  //
+  // The converters will get this right when talking about displayDepth 15 & 16, but 
+  // it will wrongly assume that displayDepth 24 takes _exactly_ 24 bitsPerPixel.  We 
+  // solve that by tricking the converter requester by presenting it a 32 bit
+  // bufferDepth instead.
+  //
+  const int displayDepth = DefaultDepth(d->display, screen);
+  d->bit_depth = displayDepth;
+  const int bufferDepth = displayDepth == 24 ? 32 : displayDepth;
+  const int bytesPerPixel = (bufferDepth + 7) / 8;
+  const int bitsPerPixel = 8 * bytesPerPixel;
+  if (bitsPerPixel != 16 && bitsPerPixel != 32)
+  {
+    display_close(d);
+    return 0;
+  }
+#if 0
+		destFormat_ = findFormat(bufferDepth,
+			visual->red_mask, visual->green_mask, visual->blue_mask);
+		floatingPointConverter_ = requestConverter(Format::XBGRFFFF, destFormat_);
+		trueColorConverter_ = requestConverter(Format::XRGB8888, destFormat_);
+		if (!floatingPointConverter_ || !trueColorConverter_)
+		{
+			close();
+			return false;
+		}
+#endif
+
+  // let's create a window
+		
+  const Window root = DefaultRootWindow(d->display);
+		
+  const int screenWidth = DisplayWidth(d->display, screen);
+  const int screenHeight = DisplayHeight(d->display, screen);
+  const int left = (screenWidth - width) / 2;
+  const int top = (screenHeight - height) / 2;
+
+  XSetWindowAttributes attributes;
+  attributes.border_pixel = attributes.background_pixel = BlackPixel(d->display, screen);
+  attributes.backing_store = NotUseful;
+
+  d->window = XCreateWindow(d->display, root, left, top, width, height, 0,
+      displayDepth, InputOutput, visual, 
+      CWBackPixel | CWBorderPixel | CWBackingStore, &attributes);
+
+
+  XStoreName(d->display, d->window, title);
+
+  d->wmProtocols = XInternAtom(d->display, "WM_PROTOCOLS", True);
+  d->wmDeleteWindow = XInternAtom(d->display, "WM_DELETE_WINDOW", True);
+  if (d->wmProtocols == 0 || d->wmDeleteWindow == 0)
+  {
+    display_close(d);
+    return 0;
+  }
+  if (XSetWMProtocols(d->display, d->window, &(d->wmDeleteWindow), 1) == 0)
+  {
+    display_close(d);
+    return 0;
+  }
+
+  XSizeHints sizeHints;
+  sizeHints.flags = PPosition | PMinSize | PMaxSize;
+  sizeHints.x = sizeHints.y = 0;
+  sizeHints.min_width = sizeHints.max_width = width;
+  sizeHints.min_height = sizeHints.max_height = height;
+  XSetNormalHints(d->display, d->window, &sizeHints);
+  XClearWindow(d->display, d->window);
+  XSelectInput(d->display, d->window, eventMask);
+
+  // create (image) buffer
+
+#if 0
+  d->buffer = aligned_alloc(128, sizeof(char) * width * height * bytesPerPixel);
+  if (!d->buffer)
+  {
+    display_close(d);
+    return 0;
+  }
+#endif
+  d->buffer = 0;
+
+  d->gc = DefaultGC(d->display, screen);
+  d->image = XCreateImage(d->display, CopyFromParent, displayDepth, ZPixmap, 0, 0,
+      width, height, bitsPerPixel, width * bytesPerPixel);
+#if 1//defined(__LITTLE_ENDIAN__)
+  d->image->byte_order = LSBFirst;
+#else
+  d->image->byte_order = MSBFirst;
+#endif	
+  if (!d->image)
+  {
+    display_close(d);
+    return 0;
+  }
+
   d->msg[0] = '\0';
   d->msg_len = 0;
 
-  const SDL_VideoInfo* info = NULL;
-  int bpp = 0;
-  int flags = 0;
+  // we have a winner!
 
-  if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-  {
-    fprintf( stderr, "[display] video initialization failed: %s\n", SDL_GetError() );
-    return 0;
-  }
-
-  info = SDL_GetVideoInfo( );
-
-  if( !info )
-  {
-    fprintf( stderr, "[display] video query failed: %s\n", SDL_GetError() );
-    return 0;
-  }
-  bpp = 32;
-
-  SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
-  SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
-  SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-  SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
-  SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-  flags = SDL_OPENGL;// | SDL_FULLSCREEN;
-
-  if( SDL_SetVideoMode( width, height, bpp, flags ) == 0 )
-  {
-    fprintf( stderr, "[display] video mode set failed: %s\n", SDL_GetError( ) );
-    return 0;
-  }
-  SDL_WM_SetCaption(title, NULL);
-
-  atexit(&SDL_Quit);
-
-#if 0
-  GLenum err = glewInit();
-  if (err != GLEW_OK)
-  {
-    fprintf(stderr, "[display] error: %s\n", glewGetErrorString(err));
-    return 0;
-  }
-  printf("[display] Using glew %s\n", glewGetString(GLEW_VERSION));
-
-  glClearColor (0.0, 0.0, 0.0, 0.0);
-  glShadeModel(GL_FLAT);
-  glEnable(GL_TEXTURE_2D);
-
-  GLuint buf_size = width * height * 3;
-  GLuint id;
-
-  glGenBuffers(1, &id);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, id);
-  glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, buf_size, 0, GL_STREAM_DRAW);
-#endif
-
-#if 1//def TEXTURE
-  // printf("blitting using tex image\n");
-  GLuint texID = 0;
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_BLEND);
-  glColor3f(1.0f, 1.0f, 1.0f);
-  glGenTextures(1, &texID);
-  glBindTexture(GL_TEXTURE_2D, texID);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, WIDTH, HEIGHT, 0, GL_RGB, GL_INT, NULL);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, d->width, d->height, 0, GL_RGBA, GL_FLOAT, NULL);
-  
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, texID);
-
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();  glLoadIdentity();
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-#endif
-
+  XMapRaised(d->display, d->window);
+  XFlush(d->display);
 
   return d;
 }
 
 void display_close(display_t *d)
 {	
+  if (d->image)
+    XDestroyImage(d->image);
+
+  if (d->display && d->window)
+    XDestroyWindow(d->display, d->window);
+
+  if (d->display)
+    XCloseDisplay(d->display);
+
+  if (d->buffer) free(d->buffer);
   free(d);
 }
 
-int handleEvent(const SDL_Event *event, display_t *d)
+static inline void handleEvent(const XEvent *event, display_t *d)
 {
-  int ret = 0;
   switch (event->type)
   {
-    case SDL_ACTIVEEVENT:
-      return 1; // redraw
-    case SDL_KEYDOWN:
+    case KeyPress:
+    case KeyRelease:
       {
-      const SDLKey keysym = event->key.keysym.sym;
-      if(keysym == SDLK_ESCAPE)
-      {
-        d->isShuttingDown = 1;
-        if(d->onClose) ret = d->onClose();
-      }
-      else if(keysym < keyMapSize)
-      {
-        if(d->onKeyDown)
-          ret = d->onKeyDown(normalKeys[keysym]);
-        if(ret < 0) return ret;
-        int ret2 = 0;
-        if(d->onKeyPressed)
-          ret2 = d->onKeyPressed(normalKeys[keysym]);
-        if(ret2 < 0) return ret2;
-        return ret + ret2;
-      }
-      }
-      return ret;
-    case SDL_KEYUP:
-      {
-      const SDLKey keysym = event->key.keysym.sym;
-      if(keysym < keyMapSize && d->onKeyUp)
-          ret = d->onKeyUp(normalKeys[keysym]);
-      }
-      return ret;
-    case SDL_QUIT:
-      d->isShuttingDown = 1;
-      if(d->onClose) d->onClose();
-      return ret;
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-      {
-        mouse_t mouse;
-        mouse.x = event->button.x;
-        mouse.y = event->button.y;
-        mouse.buttons.left   = event->button.button & SDL_BUTTON_LEFT;
-        mouse.buttons.middle = event->button.button & SDL_BUTTON_MIDDLE;
-        mouse.buttons.right  = event->button.button & SDL_BUTTON_RIGHT;
-        if (event->type == SDL_MOUSEBUTTONDOWN)
+        d->mod_state = event->xkey.state;
+        const KeySym keySym = XkbKeycodeToKeysym (d->display, event->xkey.keycode, 0, 0);
+        const int hiSym = (keySym & 0xff00) >> 8;
+        const int loSym = keySym & 0xff;
+
+        keycode_t code = KeyUndefined;
+        switch (hiSym)
         {
-          if (d->onMouseButtonDown) ret = d->onMouseButtonDown(&mouse);
+          case 0x00:
+            code = normalKeys[loSym];
+            break;
+          case 0xff:
+            code = functionKeys[loSym];
+            break;
         }
-        else if (d->onMouseButtonUp) ret = d->onMouseButtonUp(&mouse);
-        return ret;
+
+        if (event->type == KeyPress)
+        {
+          if (!keyIsPressed[code])
+          {
+            if(d->onKeyDown) d->onKeyDown(code);
+            else if (code == KeyEscape) d->isShuttingDown = 1;
+          }
+          keyIsPressed[code] = 1;
+          keyIsReleased[code] = 0;
+        }
+        else
+        {
+          keyIsReleased[code] = 1;
+        }
+        break;
       }
-    case SDL_MOUSEMOTION:
+
+    case ButtonPress:
+    case ButtonRelease:
       {
         mouse_t mouse;
-        mouse.x = event->motion.x;
-        mouse.y = event->motion.y;
-        mouse.buttons.left   = event->button.button & SDL_BUTTON_LEFT;
-        mouse.buttons.middle = event->button.button & SDL_BUTTON_MIDDLE;
-        mouse.buttons.right  = event->button.button & SDL_BUTTON_RIGHT;
-        if (d->onMouseMove) ret = d->onMouseMove(&mouse);
-        return ret;
+        mouse.x = event->xbutton.x;
+        mouse.y = event->xbutton.y;
+        mouse.buttons.left = event->xbutton.button == Button1;
+        mouse.buttons.middle = event->xbutton.button == Button2;
+        mouse.buttons.right = event->xbutton.button == Button3;
+        if (event->type == ButtonPress)
+        {
+          if (d->onMouseButtonDown) d->onMouseButtonDown(&mouse);
+        }
+        else
+        {
+          if (d->onMouseButtonUp) d->onMouseButtonUp(&mouse);
+        }
+        break;
+      }
+    case MotionNotify:
+      {
+        mouse_t mouse;
+        mouse.x = event->xmotion.x;
+        mouse.y = event->xmotion.y;
+        mouse.buttons.left = (event->xmotion.state & Button1Mask) != 0;
+        mouse.buttons.middle = (event->xmotion.state & Button2Mask) != 0;
+        mouse.buttons.right = (event->xmotion.state & Button3Mask) != 0;
+        if (d->onMouseMove) d->onMouseMove(&mouse);
+        break;
+      }
+    case ClientMessage:
+      {
+        if (event->xclient.message_type == d->wmProtocols && 
+            event->xclient.format == 32 &&
+            event->xclient.data.l[0] == (long) d->wmDeleteWindow)
+        {
+          if(d->onClose) d->onClose();
+          d->isShuttingDown = 1;
+        }
+        break;
       }
   }
-  return ret;
 }
 
 int display_pump_events(display_t *d)
 {
-  SDL_Event event;
-  while(SDL_PollEvent(&event)) handleEvent(&event, d);
+  XEvent event;
+  while (1)
+  {		
+    //if (d->isShuttingDown) return;
+    if (XCheckWindowEvent(d->display, d->window, -1, &event))
+      handleEvent(&event, d);
+    else if (XCheckTypedEvent(d->display, ClientMessage, &event))
+      handleEvent(&event, d);
+    else break;
+  }
+
+  // send key press and up events
+
+  for (int i = 0; i < keyMapSize; ++i)
+  {
+    if (keyIsReleased[i] && keyIsPressed[i])
+    {
+      if (d->onKeyUp) d->onKeyUp((keycode_t)i);
+      keyIsPressed[i] = 0;
+      keyIsReleased[i] = 0;
+    }
+    else if (keyIsPressed[i])
+    {
+      if (d->onKeyPressed) d->onKeyPressed((keycode_t)i);
+    }
+  }		
   return d->isShuttingDown ? -1 : 0;
 }
 
 int display_wait_event(display_t *d)
 {
-  SDL_Event event;
   // classify mouse move events to not trigger redraw
-  int ret = 0;
-  if(SDL_WaitEvent(&event)) ret = handleEvent(&event, d);
-  // empty whole event queue, to better support mouse move spam
-  while(SDL_PollEvent(&event)) ret += handleEvent(&event, d);
+  XEvent event;
+  XNextEvent(d->display, &event);
+  handleEvent(&event, d);
   if(d->isShuttingDown) return -1;
-  return ret;
+  return 0;
 }
 
-void convert_3(unsigned char* restrict bbuf, const float* restrict fbuf, int size)
+static inline void display_render_text(
+    display_t *d)
+    // const char *text,
+    // int text_x,
+    // int text_y)
 {
-  const int count = (((size)>>2)&0xFFFFFFFC);
-  const __m128 c256 = _mm_set1_ps(256.0f);
-  const __m128 c1 = _mm_set1_ps(1.0f);
-  const __m128* f = (__m128*)fbuf;
-  //__m128i* c = (__m128i*)bbuf;
-// TODO: port to thread pool:
-// #pragma omp parallel for default(none) schedule(static) shared(bbuf, fbuf, f)
-  for (int j=0; j < (count>>2); j++) { // converts 16 floats at once
-    const int i = j<<2;
-    __m128i *c = ((__m128i*)bbuf) + j;
-    //_mm_prefetch((void*)(f+i+32), _MM_HINT_T0); // two cache lines ahead
-    // gamma = 2.0
-    // __m128i f0 =       _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+0], f[i+0]), c256));
-    // const __m128i f1 = _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+1], f[i+1]), c256));
-    // __m128i f2 =       _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+2], f[i+2]), c256));
-    // const __m128i f3 = _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+3], f[i+3]), c256));
-#ifdef MACOSX
-    __m128i f0 =       _mm_cvttps_epi32(_mm_max_ps(_mm_setzero_ps(), _mm_mul_ps(_mm_mul_ps(f[i+0], _mm_rcp_ps(_mm_add_ps(f[i+0], c1))), c256)));
-    const __m128i f1 = _mm_cvttps_epi32(_mm_max_ps(_mm_setzero_ps(), _mm_mul_ps(_mm_mul_ps(f[i+1], _mm_rcp_ps(_mm_add_ps(f[i+1], c1))), c256)));
-    __m128i f2 =       _mm_cvttps_epi32(_mm_max_ps(_mm_setzero_ps(), _mm_mul_ps(_mm_mul_ps(f[i+2], _mm_rcp_ps(_mm_add_ps(f[i+2], c1))), c256)));
-    const __m128i f3 = _mm_cvttps_epi32(_mm_max_ps(_mm_setzero_ps(), _mm_mul_ps(_mm_mul_ps(f[i+3], _mm_rcp_ps(_mm_add_ps(f[i+3], c1))), c256)));
-    f0 = _mm_packs_epi32(_mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(f0), _mm_castsi128_ps(f0), _MM_SHUFFLE(0,1,2,3))), _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(f1), _mm_castsi128_ps(f1), _MM_SHUFFLE(0,1,2,3))));
-    f2 = _mm_packs_epi32(_mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(f2), _mm_castsi128_ps(f2), _MM_SHUFFLE(0,1,2,3))), _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(f3), _mm_castsi128_ps(f3), _MM_SHUFFLE(0,1,2,3))));
-#else
-    // tone mapping:
-    __m128i f0 =       _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+0], _mm_rcp_ps(_mm_add_ps(f[i+0], c1))), c256));
-    const __m128i f1 = _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+1], _mm_rcp_ps(_mm_add_ps(f[i+1], c1))), c256));
-    __m128i f2 =       _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+2], _mm_rcp_ps(_mm_add_ps(f[i+2], c1))), c256));
-    const __m128i f3 = _mm_cvttps_epi32(_mm_mul_ps(_mm_mul_ps(f[i+3], _mm_rcp_ps(_mm_add_ps(f[i+3], c1))), c256));
-    f0 = _mm_packs_epi32(f0, f1);
-    f2 = _mm_packs_epi32(f2, f3);
-#endif
-    __m128i result = _mm_packus_epi16(f0, f2); // saturates at 255
-    //_mm_stream_si128(c, result);
-    *c = result;
-  }
-  for(int i=count*4; i < size; i++) bbuf[i] = fminf(1.f,(fbuf[i]))*255.0f; // convert the rest
-  _mm_mfence();
-}
-
-int display_update(display_t *d, uint8_t* pixels)
-{
-  if (d->isShuttingDown)
+#if 0
+  int px = text_x;
+  for (int pos = 0; text[pos] != '\0'; pos++)
   {
-    display_close(d);
-    return 0;
+    int charPos = (text[pos] - 32)*9*2;
+    for (int x = 0; x < 9*2; x++)
+    {
+      if (px >= d->width) return;
+      unsigned char cLine = font9x16[charPos+x];			
+      for (int i = 0; i < 8; i++)
+      {
+        int y = text_y - (15 - (i + (x&1)*8));
+        if ((y >= d->height) || (y < 0)) return;
+        if (cLine & (1<<(7-i)))
+          d->buffer[px + y*d->width] = -1;
+        else
+          d->buffer[px + y*d->width] = 0;
+      }
+      if (x&1) px++;
+    }
   }
+#endif
 #if 1
+  uint8_t *pixels = d->buffer;
   // render message:
   int px = d->msg_x;
   int line = 0;
@@ -395,10 +541,10 @@ int display_update(display_t *d, uint8_t* pixels)
           for (int j = 0; j < 16; j++)
           {
             int y = (d->msg_y - j) + line*16;
-            if ((y >= d->height) || (y < 0)) goto render_message_out;
+            if ((y >= d->height) || (y < 0)) return;
             // respect fill ratio for u2581..u2588
             if(j < fill) for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
-            else         for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] *= 0.2;
+            else         for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
           }
         }
         px++;
@@ -415,65 +561,103 @@ int display_update(display_t *d, uint8_t* pixels)
           for (int i = 0; i < 8; i++)
           {
             int y = (d->msg_y - (15 - (i + (x&1)*8))) + line*16;
-            if ((y >= d->height) || (y < 0)) goto render_message_out;
+            if ((y >= d->height) || (y < 0)) return;
             if (cLine & (1<<(7-i)))
               for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
             else
-              for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] *= 0.2;
+              for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
           }
         }
         if (x&1) px++;
       }
     }
   }
-render_message_out:
 #endif
-#if 1//def TEXTURE
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, d->width, d->height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-  glBegin(GL_QUADS);
-  glTexCoord2f(0.0, 0.0); glVertex3f(-1.0,  1.0, 0.0);
-  glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, -1.0, 0.0);
-  glTexCoord2f(1.0, 1.0); glVertex3f( 1.0, -1.0, 0.0);
-  glTexCoord2f(1.0, 0.0); glVertex3f( 1.0,  1.0, 0.0);
-  glEnd();
-#endif
+}
 
-#if 0//def FBO
-  mem = (GLubyte *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-  //if(!mem) exit(1);//continue;
-  for (unsigned int y = 0; y < d->height; ++y)
-    for (unsigned int x = 0; x < d->width ; ++x) {
-      mem[y*d->width*3 + x*3] = y % 255;
-      mem[y*d->width*3 + x*3+1] = sweep%255;
-      mem[y*d->width*3 + x*3+2] = x % 255;
+int display_update(display_t *d, uint8_t *pixels)
+{
+  d->buffer = pixels;
+  if (d->isShuttingDown)
+  {
+    display_close(d);
+    return 0;
+  }
+
+  if (!d->display || !d->window || !d->image)
+    return 0;
+
+  const int w = d->width;
+  const int h = d->height;
+#if 0
+  if(d->bit_depth == 30)
+  {
+    for (int i = 0; i < size; i++)
+    {
+      // test 10-bit vs 8-bit gradient:
+      // const int r = (int)(0x3ff*CLAMP((i%w)/(w-1.0), 0, 1)) << 20;
+      // const int g = (int)(0x3ff*CLAMP((i%w)/(w-1.0), 0, 1)) << 10;
+      // const int b = (int)(0x3ff*CLAMP((i%w)/(w-1.0), 0, 1)) << 0;
+      const int r = (int)(0x3ff*CLAMP(pixels[index+3], 0, 1)) << 20;
+      const int g = (int)(0x3ff*CLAMP(pixels[index+2], 0, 1)) << 10;
+      const int b = (int)(0x3ff*CLAMP(pixels[index+1], 0, 1));
+      index += 4;
+      // rgba
+      d->buffer[i] = r | g | b;
     }
-  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0,0, d->width, d->height, GL_RGB, GL_UNSIGNED_BYTE, 0);
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glBegin(GL_QUADS);
-  glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, 0.0);
-  glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, 1.0, 0.0);
-  glTexCoord2f(1.0, 1.0); glVertex3f(1.0, 1.0, 0.0);
-  glTexCoord2f(1.0, 0.0); glVertex3f(1.0, -1.0, 0.0);
-  glEnd();
-  glFlush();
+  }
+  else // assume 24
+  {
+    for (int i = 0; i < size; i++)
+    {
+      const int r = (int)(0xff*CLAMP(pixels[index+1], 0, 1)) << 16;
+      const int g = (int)(0xff*CLAMP(pixels[index+2], 0, 1)) << 8;
+      const int b = (int)(0xff*CLAMP(pixels[index+3], 0, 1));
+      index += 4;
+      // rgba
+      d->buffer[i] = r | g | b;
+    }
+  }
 #endif
+  // render message:
+  display_render_text(d);//, d->msg, d->msg_x, d->msg_y);
 
-  SDL_GL_SwapBuffers();
+  d->image->data = (char*)(d->buffer);
+
+  XPutImage(d->display, d->window, d->gc, d->image, 0, 0, 0, 0, w, h);
+  XFlush(d->display);
+
+  d->image->data = NULL;
   return 1;
+}
+
+display_t *display_resize(display_t *d, const char *title, const int w, const int h)
+{
+#if 0
+  //XResizeWindow(d->display, d->window, w, h);
+  display_t *d3 = display_open(title, w, h);
+  d3->onKeyDown = d->onKeyDown;
+  d3->onKeyUp = d->onKeyUp;
+  d3->onMouseButtonDown = d->onMouseButtonDown;
+  d3->onMouseMove = d->onMouseMove;
+  d3->onClose = d->onClose;
+  d->isShuttingDown = 1;
+  //display_close(d); // <- segfault.
+  d3->old_display = d;
+#endif
+  return d;
 }
 
 void display_title(display_t *d, const char *title)
 {
-  SDL_WM_SetCaption(title, NULL);
+  XStoreName(d->display, d->window, title);
 }
 
 void display_print(display_t *d, const int px, const int py, const char *msg, ...)
 {
   va_list ap;
   va_start(ap, msg);
-  vsnprintf(d->msg, 40096, msg, ap);
+  vsnprintf(d->msg, 255, msg, ap);
   // vprintf(msg, ap);
   // printf("\n");
   va_end(ap);

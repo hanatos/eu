@@ -1,6 +1,4 @@
 #include "eu.h"
-#include "SDL/SDL_keysym.h"
-#include "SDL/SDL_keyboard.h"
 
 eu_t eu;
 
@@ -79,7 +77,7 @@ int onKeyPressed(keycode_t key)
   char title[256];
   float x, y;
   pointer_to_image(&x, &y);
-  const int shift = SDL_GetModState() & KMOD_SHIFT;
+  const int shift = eu.display->mod_state & s_display_shift;
   if(eu.gui.dragging == 2)
   { // exposure typing mode
     eu.gui.input_string[eu.gui.input_string_len+1] = 0;
