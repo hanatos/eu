@@ -72,7 +72,7 @@ static inline void offset_image(float x, float y)
   eu.conv.roi.y = MAX(0, y - eu.conv.roi_out.h/(eu.conv.roi.scale * 2));
 }
 
-int onKeyPressed(keycode_t key)
+int onKeyDown(keycode_t key)
 {
   char title[256];
   float x, y;
@@ -293,6 +293,7 @@ int onMouseButtonDown(mouse_t *mouse)
   eu.gui.pointer = eu.gui.pointer_button = *mouse;
   eu.gui.button_x = eu.conv.roi.x;
   eu.gui.button_y = eu.conv.roi.y;
+  eu.gui.start_exposure = eu.conv.exposure;
   if(eu.gui.dragging == 0)
     eu.gui.dragging = 1;
   return 0;
@@ -309,7 +310,7 @@ int onMouseButtonUp(mouse_t *mouse)
   if(eu.gui.dragging == 2)
   {
     // exposure correction, one screen width is 2 stops
-    eu.conv.exposure += 2.0f*(mouse->x - eu.gui.pointer_button.x)/(float)eu.display->width;
+    eu.conv.exposure = eu.gui.start_exposure + 2.0f*(mouse->x - eu.gui.pointer_button.x)/(float)eu.display->width;
     eu.gui.dragging = 0;
     display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
     return 1;
@@ -329,6 +330,13 @@ int onMouseMove(mouse_t *mouse)
     eu.conv.roi.y = eu.gui.button_y - diff_y;
     return 1;
   }
+  if(eu.gui.dragging == 2)
+  {
+    // exposure correction, one screen width is 2 stops
+    eu.conv.exposure = eu.gui.start_exposure + 2.0f*(mouse->x - eu.gui.pointer_button.x)/(float)eu.display->width;
+    display_print(eu.display, 0, 0, "exposure %f", eu.conv.exposure);
+    return 1;
+  }
   // all dragging should refresh
   if(eu.gui.dragging) return 1;
   return 0;
@@ -336,7 +344,7 @@ int onMouseMove(mouse_t *mouse)
 
 /*
   int (*onKeyUp)(keycode_t);
-  int (*onKeyDown)(keycode_t);
+  int (*onKeyPressed)(keycode_t);
   int (*onClose)();
 */
 
@@ -351,12 +359,12 @@ int main(int argc, char *arg[])
 
   const int wd = 1024, ht = 576;
   if(eu_init(&eu, wd, ht, argc, arg)) goto exit;
-  eu.display->onKeyPressed = onKeyPressed;
+  eu.display->onKeyDown = onKeyDown;
   eu.display->onMouseMove = onMouseMove;
   eu.display->onMouseButtonDown = onMouseButtonDown;
   eu.display->onMouseButtonUp = onMouseButtonUp;
 
-  onKeyPressed(KeyTwo); // scale to fit on startup
+  onKeyDown(KeyTwo); // scale to fit on startup
 
   int ret = 1;
   while(1)
@@ -377,7 +385,7 @@ int main(int argc, char *arg[])
       if(eu.current_file >= eu.num_files-1) eu.current_file = 0;
       else eu.current_file++;
       ret = 1; // trigger redraw
-      onKeyPressed(KeyTwo); // scale to fit
+      onKeyDown(KeyTwo); // scale to fit
     }
     else
       ret = display_wait_event(eu.display);

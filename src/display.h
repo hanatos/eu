@@ -40,7 +40,7 @@ typedef struct display_t
   Window window;
   XImage* image;
   GC gc;
-  uint8_t *buffer;
+  uint32_t *buffer;
   int bit_depth;
 
   display_mod_state_t mod_state;

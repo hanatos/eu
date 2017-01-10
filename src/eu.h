@@ -24,6 +24,7 @@ typedef struct eu_gui_state_t
   char input_string[256];
   int input_string_len;
   int batch;
+  float start_exposure;
 }
 eu_gui_state_t;
 

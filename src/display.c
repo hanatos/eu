@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <xmmintrin.h>
 
-static const int eventMask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ButtonMotionMask;
+static const int eventMask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | PointerMotionHintMask | ButtonMotionMask;
 #define keyMapSize 256
 
 static keycode_t normalKeys[keyMapSize];
@@ -99,6 +99,7 @@ int initializeKeyMaps()
   normalKeys[XK_x] = KeyX;
   normalKeys[XK_y] = KeyY;
   normalKeys[XK_z] = KeyZ;
+  normalKeys[XK_minus] = KeyMinus;
   normalKeys[XK_bracketleft] = KeyOpenBracket;
   normalKeys[XK_backslash] = KeyBackSlash;
   normalKeys[XK_bracketright] = KeyCloseBracket;
@@ -308,15 +309,12 @@ display_t *display_open(const char title[], int width, int height)
 
   // create (image) buffer
 
-#if 0
   d->buffer = aligned_alloc(128, sizeof(char) * width * height * bytesPerPixel);
   if (!d->buffer)
   {
     display_close(d);
     return 0;
   }
-#endif
-  d->buffer = 0;
 
   d->gc = DefaultGC(d->display, screen);
   d->image = XCreateImage(d->display, CopyFromParent, displayDepth, ZPixmap, 0, 0,
@@ -358,8 +356,10 @@ void display_close(display_t *d)
   free(d);
 }
 
-static inline void handleEvent(const XEvent *event, display_t *d)
+static inline int handleEvent(const XEvent *event, display_t *d)
 {
+  static Time prevtime = 0;
+  int ret = 0;
   switch (event->type)
   {
     case KeyPress:
@@ -383,10 +383,10 @@ static inline void handleEvent(const XEvent *event, display_t *d)
 
         if (event->type == KeyPress)
         {
-          if (!keyIsPressed[code])
+          // if (!keyIsPressed[code])
           {
-            if(d->onKeyDown) d->onKeyDown(code);
-            else if (code == KeyEscape) d->isShuttingDown = 1;
+            if (code == KeyEscape) d->isShuttingDown = 1;
+            else if(d->onKeyDown) ret = d->onKeyDown(code);
           }
           keyIsPressed[code] = 1;
           keyIsReleased[code] = 0;
@@ -409,23 +409,35 @@ static inline void handleEvent(const XEvent *event, display_t *d)
         mouse.buttons.right = event->xbutton.button == Button3;
         if (event->type == ButtonPress)
         {
-          if (d->onMouseButtonDown) d->onMouseButtonDown(&mouse);
+          if (d->onMouseButtonDown) ret = d->onMouseButtonDown(&mouse);
         }
         else
         {
-          if (d->onMouseButtonUp) d->onMouseButtonUp(&mouse);
+          if (d->onMouseButtonUp) ret = d->onMouseButtonUp(&mouse);
         }
         break;
       }
     case MotionNotify:
       {
-        mouse_t mouse;
-        mouse.x = event->xmotion.x;
-        mouse.y = event->xmotion.y;
-        mouse.buttons.left = (event->xmotion.state & Button1Mask) != 0;
-        mouse.buttons.middle = (event->xmotion.state & Button2Mask) != 0;
-        mouse.buttons.right = (event->xmotion.state & Button3Mask) != 0;
-        if (d->onMouseMove) d->onMouseMove(&mouse);
+        if(d->onMouseMove)
+        {
+          int numev = 0;
+          XTimeCoord *t = XGetMotionEvents(d->display, d->window, prevtime,
+              0, &numev);
+          prevtime = event->xmotion.time;
+          for(int i=0;i<numev;i++)
+          {
+            mouse_t mouse;
+            mouse.x = t[i].x;//event->xmotion.x;
+            mouse.y = t[i].y;//event->xmotion.y;
+            mouse.buttons.left = (event->xmotion.state & Button1Mask) != 0;
+            mouse.buttons.middle = (event->xmotion.state & Button2Mask) != 0;
+            mouse.buttons.right = (event->xmotion.state & Button3Mask) != 0;
+            int ret2 = d->onMouseMove(&mouse);
+            if(ret2 < 0) return ret2;
+            ret += ret2;
+          }
+        }
         break;
       }
     case ClientMessage:
@@ -434,43 +446,32 @@ static inline void handleEvent(const XEvent *event, display_t *d)
             event->xclient.format == 32 &&
             event->xclient.data.l[0] == (long) d->wmDeleteWindow)
         {
-          if(d->onClose) d->onClose();
+          if(d->onClose) ret = d->onClose();
           d->isShuttingDown = 1;
         }
         break;
       }
   }
+  return ret;
 }
 
 int display_pump_events(display_t *d)
 {
   XEvent event;
+  int ret = 0;
   while (1)
-  {		
-    //if (d->isShuttingDown) return;
-    if (XCheckWindowEvent(d->display, d->window, -1, &event))
-      handleEvent(&event, d);
-    else if (XCheckTypedEvent(d->display, ClientMessage, &event))
-      handleEvent(&event, d);
-    else break;
-  }
-
-  // send key press and up events
-
-  for (int i = 0; i < keyMapSize; ++i)
   {
-    if (keyIsReleased[i] && keyIsPressed[i])
-    {
-      if (d->onKeyUp) d->onKeyUp((keycode_t)i);
-      keyIsPressed[i] = 0;
-      keyIsReleased[i] = 0;
-    }
-    else if (keyIsPressed[i])
-    {
-      if (d->onKeyPressed) d->onKeyPressed((keycode_t)i);
-    }
-  }		
-  return d->isShuttingDown ? -1 : 0;
+    if (d->isShuttingDown) return -1;
+    int ret2 = 0;
+    if (XCheckWindowEvent(d->display, d->window, -1, &event))
+      ret2 = handleEvent(&event, d);
+    else if (XCheckTypedEvent(d->display, ClientMessage, &event))
+      ret2 = handleEvent(&event, d);
+    else break;
+    if(ret2 < 0) return ret2;
+    ret += ret2;
+  }
+  return d->isShuttingDown ? -1 : ret;
 }
 
 int display_wait_event(display_t *d)
@@ -478,13 +479,14 @@ int display_wait_event(display_t *d)
   // classify mouse move events to not trigger redraw
   XEvent event;
   XNextEvent(d->display, &event);
-  handleEvent(&event, d);
+  int ret = handleEvent(&event, d);
   if(d->isShuttingDown) return -1;
-  return 0;
+  return ret;
 }
 
 static inline void display_render_text(
-    display_t *d)
+    display_t *d,
+    uint8_t *pixels)
     // const char *text,
     // int text_x,
     // int text_y)
@@ -512,7 +514,6 @@ static inline void display_render_text(
   }
 #endif
 #if 1
-  uint8_t *pixels = d->buffer;
   // render message:
   int px = d->msg_x;
   int line = 0;
@@ -577,7 +578,6 @@ static inline void display_render_text(
 
 int display_update(display_t *d, uint8_t *pixels)
 {
-  d->buffer = pixels;
   if (d->isShuttingDown)
   {
     display_close(d);
@@ -587,9 +587,13 @@ int display_update(display_t *d, uint8_t *pixels)
   if (!d->display || !d->window || !d->image)
     return 0;
 
+  // render message:
+  display_render_text(d, pixels);//, d->msg, d->msg_x, d->msg_y);
+
   const int w = d->width;
   const int h = d->height;
-#if 0
+  int index = 0;
+  const int size = w*h;
   if(d->bit_depth == 30)
   {
     for (int i = 0; i < size; i++)
@@ -598,10 +602,10 @@ int display_update(display_t *d, uint8_t *pixels)
       // const int r = (int)(0x3ff*CLAMP((i%w)/(w-1.0), 0, 1)) << 20;
       // const int g = (int)(0x3ff*CLAMP((i%w)/(w-1.0), 0, 1)) << 10;
       // const int b = (int)(0x3ff*CLAMP((i%w)/(w-1.0), 0, 1)) << 0;
-      const int r = (int)(0x3ff*CLAMP(pixels[index+3], 0, 1)) << 20;
-      const int g = (int)(0x3ff*CLAMP(pixels[index+2], 0, 1)) << 10;
-      const int b = (int)(0x3ff*CLAMP(pixels[index+1], 0, 1));
-      index += 4;
+      const int r = pixels[index+2] << 22;
+      const int g = pixels[index+1] << 12;
+      const int b = pixels[index+0] << 2;
+      index += 3;
       // rgba
       d->buffer[i] = r | g | b;
     }
@@ -610,17 +614,14 @@ int display_update(display_t *d, uint8_t *pixels)
   {
     for (int i = 0; i < size; i++)
     {
-      const int r = (int)(0xff*CLAMP(pixels[index+1], 0, 1)) << 16;
-      const int g = (int)(0xff*CLAMP(pixels[index+2], 0, 1)) << 8;
-      const int b = (int)(0xff*CLAMP(pixels[index+3], 0, 1));
-      index += 4;
+      const int r = pixels[index+0] << 16;
+      const int g = pixels[index+1] << 8;
+      const int b = pixels[index+2];
+      index += 3;
       // rgba
       d->buffer[i] = r | g | b;
     }
   }
-#endif
-  // render message:
-  display_render_text(d);//, d->msg, d->msg_x, d->msg_y);
 
   d->image->data = (char*)(d->buffer);
 
@@ -633,18 +634,6 @@ int display_update(display_t *d, uint8_t *pixels)
 
 display_t *display_resize(display_t *d, const char *title, const int w, const int h)
 {
-#if 0
-  //XResizeWindow(d->display, d->window, w, h);
-  display_t *d3 = display_open(title, w, h);
-  d3->onKeyDown = d->onKeyDown;
-  d3->onKeyUp = d->onKeyUp;
-  d3->onMouseButtonDown = d->onMouseButtonDown;
-  d3->onMouseMove = d->onMouseMove;
-  d3->onClose = d->onClose;
-  d->isShuttingDown = 1;
-  //display_close(d); // <- segfault.
-  d3->old_display = d;
-#endif
   return d;
 }
 
@@ -657,7 +646,7 @@ void display_print(display_t *d, const int px, const int py, const char *msg, ..
 {
   va_list ap;
   va_start(ap, msg);
-  vsnprintf(d->msg, 255, msg, ap);
+  vsnprintf(d->msg, sizeof(d->msg), msg, ap);
   // vprintf(msg, ap);
   // printf("\n");
   va_end(ap);
