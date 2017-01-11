@@ -343,6 +343,7 @@ display_t *display_open(const char title[], int width, int height)
 
 void display_close(display_t *d)
 {	
+  if(!d) return;
   if (d->image)
     XDestroyImage(d->image);
 
