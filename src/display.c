@@ -487,34 +487,8 @@ int display_wait_event(display_t *d)
 
 static inline void display_render_text(
     display_t *d,
-    uint8_t *pixels)
-    // const char *text,
-    // int text_x,
-    // int text_y)
+    uint32_t *pixels)
 {
-#if 0
-  int px = text_x;
-  for (int pos = 0; text[pos] != '\0'; pos++)
-  {
-    int charPos = (text[pos] - 32)*9*2;
-    for (int x = 0; x < 9*2; x++)
-    {
-      if (px >= d->width) return;
-      unsigned char cLine = font9x16[charPos+x];			
-      for (int i = 0; i < 8; i++)
-      {
-        int y = text_y - (15 - (i + (x&1)*8));
-        if ((y >= d->height) || (y < 0)) return;
-        if (cLine & (1<<(7-i)))
-          d->buffer[px + y*d->width] = -1;
-        else
-          d->buffer[px + y*d->width] = 0;
-      }
-      if (x&1) px++;
-    }
-  }
-#endif
-#if 1
   // render message:
   int px = d->msg_x;
   int line = 0;
@@ -545,8 +519,8 @@ static inline void display_render_text(
             int y = (d->msg_y - j) + line*16;
             if ((y >= d->height) || (y < 0)) return;
             // respect fill ratio for u2581..u2588
-            if(j < fill) for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
-            else         for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
+            if(j < fill) pixels[px + y*d->width] = 0xc8c8c8;
+            else         pixels[px + y*d->width] = (pixels[px + y*d->width]>>1)&0x7f7f7f;
           }
         }
         px++;
@@ -555,7 +529,10 @@ static inline void display_render_text(
     }
     else
     {
-      for (int x = 0; x < 9*2; x++)
+      if(d->msg[pos] == ' ' && // skip adjacent spaces
+         ((pos && d->msg[pos-1] == ' ') || (pos+1 < d->msg_len && d->msg[pos+1] == ' ')))
+          px += 9;
+      else for (int x = 0; x < 9*2; x++)
       {
         if (px < d->width)
         {
@@ -565,16 +542,15 @@ static inline void display_render_text(
             int y = (d->msg_y - (15 - (i + (x&1)*8))) + line*16;
             if ((y >= d->height) || (y < 0)) return;
             if (cLine & (1<<(7-i)))
-              for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 200;
+              pixels[px + y*d->width] = 0xc8c8c8;
             else
-              for(int k=0;k<3;k++) pixels[(px + y*d->width)*3+k] = 10;
+              pixels[px + y*d->width] = (pixels[px + y*d->width]>>1)&0x7f7f7f;
           }
         }
         if (x&1) px++;
       }
     }
   }
-#endif
 }
 
 int display_update(display_t *d, uint8_t *pixels)
@@ -587,9 +563,6 @@ int display_update(display_t *d, uint8_t *pixels)
 
   if (!d->display || !d->window || !d->image)
     return 0;
-
-  // render message:
-  display_render_text(d, pixels);//, d->msg, d->msg_x, d->msg_y);
 
   const int w = d->width;
   const int h = d->height;
@@ -623,6 +596,9 @@ int display_update(display_t *d, uint8_t *pixels)
       d->buffer[i] = r | g | b;
     }
   }
+
+  // render message:
+  display_render_text(d, d->buffer);
 
   d->image->data = (char*)(d->buffer);
 
