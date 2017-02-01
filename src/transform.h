@@ -83,7 +83,7 @@ static inline float fast_powf(float a, float b)
   return fastpow2(b * fastlog2(a));
 }
 
-static inline void transform_color(float *in, const transform_color_t ci, const transform_color_t co)
+static inline void transform_color(float *in, const transform_color_t ci, const transform_color_t co, const int fast)
 {
   if(ci == s_passthrough) return;
   assert(ci == s_xyz);
@@ -109,7 +109,10 @@ static inline void transform_color(float *in, const transform_color_t ci, const 
 
     // apply tonecurve. adobe rgb does not have a linear toe slope, but gamma of:
     const float g = 1.f/2.19921875f;
-    for(int k=0;k<3;k++) in[k] = copysignf(fast_powf(fabsf(in[k]), g), in[k]);
+    if(fast)
+      for(int k=0;k<3;k++) in[k] = copysignf(fast_powf(fabsf(in[k]), g), in[k]);
+    else
+      for(int k=0;k<3;k++) in[k] = copysignf(powf(fabsf(in[k]), g), in[k]);
   }
   else if(co == s_srgb)
   {

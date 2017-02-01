@@ -176,7 +176,7 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
       transform_exposure(tmp, f);
 
       // color conversion
-      transform_color(tmp, c->colorin, c->colorout);
+      transform_color(tmp, c->colorin, c->colorout, 0);
 
       // gamut mapping 
       if(c->colorin != s_passthrough)
@@ -257,7 +257,7 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
       for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // color conversion
-      transform_color(tmp, c->colorin, c->colorout);
+      transform_color(tmp, c->colorin, c->colorout, 1);
       for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // gamut mapping 
