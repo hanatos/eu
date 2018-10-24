@@ -233,6 +233,12 @@ int onKeyDown(keycode_t key)
         display_print(eu.display, 0, 0, "curve: tonemap");
         return 1;
       }
+      else if(eu.conv.curve == s_tonemap)
+      {
+        eu.conv.curve = s_isolines;
+        display_print(eu.display, 0, 0, "curve: isolines");
+        return 1;
+      }
       else
       {
         eu.conv.curve = s_none;

@@ -1,5 +1,6 @@
 #pragma once
 #include "transform.h"
+#include "framebuffer.h"
 
 #include <assert.h>
 #include <math.h>
@@ -47,6 +48,13 @@ typedef struct fileinput_conversion_t
 }
 fileinput_conversion_t;
 
+typedef enum fileinput_type_t
+{
+  s_pfm = 0,
+  s_fb  = 1,
+}
+fileinput_type_t;
+
 /* struct encapsulating all pfm specific stuff */
 typedef struct fileinput_pfm_t
 {
@@ -66,24 +74,32 @@ typedef struct fileinput_t
 
   int flag;            // flagged for comparison?
 
-  fileinput_pfm_t pfm; // only supported format so far
+  fileinput_type_t format;
+
+  fileinput_pfm_t pfm; // pfm file
+  framebuffer_t fb;    // framebuffer file
 }
 fileinput_t;
 
 /* wrappers to get dimensions, for future format extension. */
 static inline int fileinput_width(fileinput_t *in)
 {
-  return in->pfm.width;
+  if(in->format == s_pfm)
+    return in->pfm.width;
+  return in->fb.header->width;
 }
 
 static inline int fileinput_height(fileinput_t *in)
 {
-  return in->pfm.height;
+  if(in->format == s_pfm)
+    return in->pfm.height;
+  return in->fb.header->height;
 }
 
 /* unmap the file. */
 static inline void fileinput_close(fileinput_t *in)
 {
+  if(in->format == s_fb) fb_cleanup(&in->fb);
   if(in->data) munmap(in->data, in->data_size);
   if(in->fd > 2) close(in->fd);
   in->fd = -1;
@@ -94,6 +110,14 @@ static inline int fileinput_open(fileinput_t *in, const char *filename)
 {
   in->flag = 0;
   in->data = 0;
+
+  if(!fb_map(&in->fb, filename))
+  { // first try to map as fb
+    in->format = s_fb;
+    return 0;
+  }
+
+  in->format = s_pfm;
   in->fd = open(filename, O_RDONLY);
   (void)strncpy(in->filename, filename, 1024);
   if(in->fd == -1) return 1;
@@ -146,6 +170,7 @@ static inline double _time_wallclock()
 
 static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_t *c, const char *filename)
 {
+  if(in->format != s_pfm) return 1; // TODO: use fb input, too
   fprintf(stderr, "[process] rendering `%s'\n", filename);
   FILE *out = fopen(filename, "wb");
   if(!out) return 1;
@@ -201,19 +226,21 @@ static inline int fileinput_process(fileinput_t *in, const fileinput_conversion_
 static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *c, uint8_t *buf)
 {
   double start = _time_wallclock();
-  const int32_t roix = CLAMP(c->roi.x, 0, MAX(0, in->pfm.width  - c->roi_out.w/c->roi.scale - 1));
-  const int32_t roiy = CLAMP(c->roi.y, 0, MAX(0, in->pfm.height - c->roi_out.h/c->roi.scale - 1));
+  const uint64_t wd = in->format == s_pfm ? in->pfm.width  : in->fb.header->width;
+  const uint64_t ht = in->format == s_pfm ? in->pfm.height : in->fb.header->height;
+  const int32_t roix = CLAMP(c->roi.x, 0, MAX(0, wd - c->roi_out.w/c->roi.scale - 1));
+  const int32_t roiy = CLAMP(c->roi.y, 0, MAX(0, ht - c->roi_out.h/c->roi.scale - 1));
   // skip dead frames
   if(in->fd < 0) return 1;
   const float scalex = 1.0f/c->roi.scale;
   const float scaley = 1.0f/c->roi.scale;
   int32_t ix2 = roix;
   int32_t iy2 = roiy;
-  int32_t ibw = in->pfm.width, ibh = in->pfm.height;
+  int32_t ibw = wd, ibh = ht;
   int32_t obw = c->roi_out.w, obh = c->roi_out.h;
   int32_t ow = c->roi_out.w, oh = c->roi_out.h;
-  int32_t ox2 = MAX(0, (c->roi_out.w-in->pfm.width*c->roi.scale)*.5f);
-  int32_t oy2 = MAX(0, (c->roi_out.h-in->pfm.height*c->roi.scale)*.5f);
+  int32_t ox2 = MAX(0, (c->roi_out.w-wd*c->roi.scale)*.5f);
+  int32_t oy2 = MAX(0, (c->roi_out.h-ht*c->roi.scale)*.5f);
   int32_t oh2 = MIN(MIN(oh, MAX(0, (ibh - iy2)/scaley)), MAX(0, obh - oy2));
   int32_t ow2 = MIN(MIN(ow, MAX(0, (ibw - ix2)/scalex)), MAX(0, obw - ox2));
   assert((int)(ix2 + ow2*scalex) <= ibw);
@@ -223,7 +250,10 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
   assert(ix2 >= 0 && iy2 >= 0 && ox2 >= 0 && oy2 >= 0);
   float x = ix2, y = iy2;
 
-  const float f = (in->pfm.scale ? in->pfm.scale[0] : 1.0f) * powf(2.0f, c->exposure);
+  float sc = 1.0f;
+  if(in->format == s_pfm && in->pfm.scale) sc = in->pfm.scale[0];
+  if(in->format == s_fb) sc = in->fb.header->gain;
+  const float f = sc * powf(2.0f, c->exposure);
 
   // TODO parallel
   // fill top/bottom borders:
@@ -238,19 +268,15 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
     int idx = ox2 + obw*(oy2+s);
     for(int t=0; t<ow2; t++)
     {
-      // TODO: clamp x y
-      // for(int k=0; k<3; k++) buf[3*idx + k] = //255.0f*in->pfm.pixel[3*(ibw*(int)y + (int)x) + k];
-      //  CLAMP((in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x + .5f*scalex)) + k] +
-      //         in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x + .5f*scalex)) + k] +
-      //         in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x             )) + k] +
-      //         in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x             )) + k])*64.0f, 0, 255);
-      // TODO: get input as float triple, then:
       float tmp[3];
+      // TODO: fb channel offset selection
+      const int nc = in->format == s_pfm ? 3 : in->fb.header->channels;
+      const float *const inb = in->format == s_pfm ? in->pfm.pixel : in->fb.fb;
       for(int k=0; k<3; k++) tmp[k] = //255.0f*in->pfm.pixel[3*(ibw*(int)y + (int)x) + k];
-      (in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x + .5f*scalex)) + k] +
-       in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x + .5f*scalex)) + k] +
-       in->pfm.pixel[3*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x             )) + k] +
-       in->pfm.pixel[3*(ibw*(int32_t) y +            (int32_t) (x             )) + k])*.25f;
+      (inb[nc*(ibw*(int32_t) y +            (int32_t) (x + .5f*scalex)) + k] +
+       inb[nc*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x + .5f*scalex)) + k] +
+       inb[nc*(ibw*(int32_t)(y+.5f*scaley) +(int32_t) (x             )) + k] +
+       inb[nc*(ibw*(int32_t) y +            (int32_t) (x             )) + k])*.25f;
 
       // float exposure; adjust exposure
       transform_exposure(tmp, f);

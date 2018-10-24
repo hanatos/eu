@@ -45,6 +45,7 @@ typedef enum transform_curve_t
   s_none,          // straight output of colorout space
   s_contrast,      // contrast s curve
   s_tonemap,       // L = L/(L+1) tonemapping
+  s_isolines,      // highlight a couple of isoline steps
 }
 transform_curve_t;
 
@@ -252,6 +253,18 @@ static inline void transform_curve(const float *tmp, uint8_t *out, const transfo
 
     for(int k=0;k<3;k++)
       out[k] = CLAMP(255.0f*rgb[k], 0, 255.0);
+  }
+  else if(c == s_isolines)
+  {
+    float md = 1e30;
+    float f = tmp[1];
+    int num = 10;
+    for(int k=0;k<num;k++)
+      md = fminf(md, fabsf(f - k/(num-1.0f)));
+    float wd = 0.01f;
+    const float col = fmaxf(0.0f, (wd - md)/wd);
+    for(int k=0;k<3;k++)
+      out[k] = CLAMP(255.0f*col, 0, 255.0);
   }
   else
   {
