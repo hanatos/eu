@@ -302,6 +302,8 @@ int onMouseButtonDown(mouse_t *mouse)
   eu.gui.start_exposure = eu.conv.exposure;
   if(eu.gui.dragging == 0)
     eu.gui.dragging = 1;
+  else if(eu.gui.dragging == 2)
+    eu.gui.dragging = 3;
   return 0;
 }
 
@@ -313,7 +315,7 @@ int onMouseButtonUp(mouse_t *mouse)
     eu.gui.dragging = 0;
     return 1;
   }
-  if(eu.gui.dragging == 2)
+  if(eu.gui.dragging == 3)
   {
     // exposure correction, one screen width is 2 stops
     eu.conv.exposure = eu.gui.start_exposure + 2.0f*(mouse->x - eu.gui.pointer_button.x)/(float)eu.display->width;
@@ -336,7 +338,7 @@ int onMouseMove(mouse_t *mouse)
     eu.conv.roi.y = eu.gui.button_y - diff_y;
     return 1;
   }
-  if(eu.gui.dragging == 2)
+  if(eu.gui.dragging == 3)
   {
     // exposure correction, one screen width is 2 stops
     eu.conv.exposure = eu.gui.start_exposure + 2.0f*(mouse->x - eu.gui.pointer_button.x)/(float)eu.display->width;

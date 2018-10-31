@@ -436,7 +436,7 @@ static inline int handleEvent(const XEvent *event, display_t *d)
             mouse.buttons.right = (event->xmotion.state & Button3Mask) != 0;
             int ret2 = d->onMouseMove(&mouse);
             if(ret2 < 0) return ret2;
-            ret += ret2;
+            ret = ret2 ? ret2 : ret;
           }
         }
         break;
