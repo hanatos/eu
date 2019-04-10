@@ -7,8 +7,7 @@ static inline char* load_sidecar(fileinput_t *file)
   char filename[1024];
   (void)strncpy(filename, file->filename, 1024);
   char *t = filename + strlen(filename);
-  while(t > filename && *t != '.') t--;
-  if(*t == '.') sprintf(t, ".txt");
+  sprintf(t, ".txt");
 
   char *text = 0;
   int sc_fd = open(filename, O_RDONLY);
