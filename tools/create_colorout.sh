@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # iccdump outputs the transpose of the rgb -> xyz matrix, so read the transpose of that:
-read -r w0 w1 w2 a00 a10 a20 a01 a11 a21 a02 a12 a22 <<< $(iccdump -v3 -t wtpt -t rXYZ -t gXYZ -t bXYZ $1 | grep 0: | awk '{print $2 $3 $4}' | tr ',' ' ')
+read -r w0 w1 w2 a00 a10 a20 a01 a11 a21 a02 a12 a22 <<< $(iccdump -v3 -t wtpt -t rXYZ -t gXYZ -t bXYZ $1 | grep 0: | awk '{print $2 $3 $4}' | tr ',' ' ' | tr '\n' ' ')
 echo "wp $w0 $w1 $w2"
 echo "rgb to xyz"
 echo $a00 $a01 $a02
@@ -93,7 +93,7 @@ echo "gamma red, green, blue:"
 echo $gr $gg $gb
 
 
-cat > include/colorout_custom.h << EOF
+cat > color/colorout_custom.h << EOF
 #ifndef CORONA_COLOROUT_H
 #define CORONA_COLOROUT_H
 
