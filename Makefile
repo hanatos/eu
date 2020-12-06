@@ -7,9 +7,16 @@ CFLAGS=-fno-strict-aliasing -std=c11 -Wall -pipe -Isrc/ -D_DEFAULT_SOURCE -g
 LDFLAGS=-lm -lc -lpthread -lX11
 PREFIX=/usr
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+# MacOS
+CFLAGS += -I/opt/X11/include
+LDFLAGS += -L/opt/X11/lib
+endif
+
 # configure the color module: custom will use this.
 COLOR=srgb
-include config.mk
+sinclude config.mk
 
 .PHONY: clean all
 
