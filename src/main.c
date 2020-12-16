@@ -31,6 +31,15 @@ static inline char* load_sidecar(fileinput_t *file)
   return text;
 }
 
+static inline void show_title()
+{
+    char title[256];
+    snprintf(title, 256, "%sframe %04d/%04d -- %s",
+             eu.file[eu.current_file].flag ? "*" : " ",
+             eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
+    display_title(eu.display, title);
+}
+
 static inline void show_metadata()
 {
   if(eu.gui.show_metadata)
@@ -73,7 +82,6 @@ static inline void offset_image(float x, float y)
 
 int onKeyDown(keycode_t key)
 {
-  char title[256];
   float x, y;
   pointer_to_image(&x, &y);
   const int shift = eu.display->mod_state & s_display_shift;
@@ -119,6 +127,7 @@ int onKeyDown(keycode_t key)
 
     case KeyF: // flag/unflag for comparison
       eu.file[eu.current_file].flag ^= 1;
+      show_title();
       return 1;
 
     case KeyR: // red channel
@@ -179,8 +188,7 @@ int onKeyDown(keycode_t key)
         eu.current_file++;
       }
       while(shift && !eu.file[eu.current_file].flag);
-      snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
-      display_title(eu.display, title);
+      show_title();
       show_metadata();
       return 1;
     case KeyLeft:
@@ -191,8 +199,7 @@ int onKeyDown(keycode_t key)
         eu.current_file--;
       }
       while(shift && !eu.file[eu.current_file].flag);
-      snprintf(title, 256, "frame %04d/%04d -- %s", eu.current_file+1, eu.num_files, eu.file[eu.current_file].filename);
-      display_title(eu.display, title);
+      show_title();
       show_metadata();
       return 1;
 
@@ -212,7 +219,25 @@ int onKeyDown(keycode_t key)
       if(eu.display->msg_len > 0)
         display_print(eu.display, 0, 0, "");
       else
-        display_print(eu.display, 0, 0, "[e]xpose\n[123] zoom\n[rgbc] channels\n[arrows] next/prev\n[h]elp\n[esc/q]uit\n[m] gamut map\n[p]rofile\n[s]idecar\n[t]onecurve");
+        display_print(eu.display, 0, 0,
+                      "[e]xpose\n"
+                      "[1] toggle 1:1/1:2\n"
+                      "[2] scale fit\n"
+                      "[3] scale fill\n"
+                      "[rgbc] channels\n"
+                      "[arrows] next/prev\n"
+                      "[f]lag\n"
+                      "[shift arrows] next/prev flagged \n"
+                      "[s]idecar metadata\n"
+                      "[t]onecurve\n"
+                      "[m] gamut map\n"
+                      "[i]nput color space xyz/passthrough\n"
+                      "[p]rofile color space\n"
+                      "[space] play\n"
+                      "[d]ump PPM (dump.ppm)\n"
+                      "[x] display mouse coords\n"
+                      "[h]elp\n"
+                      "[esc/q]uit");
       return 1;
 
     case KeyS:
@@ -288,6 +313,10 @@ int onKeyDown(keycode_t key)
     case KeyQ:
       return -1;
 
+    case KeyX: // flag/unflag for comparison
+      eu.gui.show_mouse_coords ^= 1;
+      return 1;
+
     default:
       return 0;
   }
@@ -345,7 +374,15 @@ int onMouseMove(mouse_t *mouse)
     return 1;
   }
   // all dragging should refresh
-  if(eu.gui.dragging) return 1;
+  if(eu.gui.dragging)
+      return 1;
+  if (eu.gui.show_mouse_coords)
+  {
+      float x, y;
+      pointer_to_image(&x, &y);
+      display_print(eu.display, 0, 0, "mouse %f %f", x, y);
+      return 1;
+  }
   return 0;
 }
 
@@ -382,6 +419,7 @@ int main(int argc, char *arg[])
       fileinput_grab(eu.file+eu.current_file, &eu.conv, eu.pixels);
       // show on screen
       display_update(eu.display, eu.pixels);
+      show_title();
     }
     // get user input, wait for it if need be.
     

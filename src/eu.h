@@ -20,6 +20,7 @@ typedef struct eu_gui_state_t
   float button_x, button_y;
   int dragging;
   int show_metadata;
+  int show_mouse_coords;
   int play;
   char input_string[256];
   int input_string_len;
@@ -64,6 +65,7 @@ static inline int eu_load_profile(eu_t *eu, const char *filename)
     eu->gui.input_string_len = 0;
     eu->gui.dragging = 0;
     eu->gui.play = 0;
+    eu->gui.show_mouse_coords = 0;
 
     eu->conv.roi.x = 0;
     eu->conv.roi.y = 0;
