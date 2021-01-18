@@ -46,6 +46,7 @@ typedef enum transform_curve_t
   s_contrast,      // contrast s curve
   s_tonemap,       // L = L/(L+1) tonemapping
   s_isolines,      // highlight a couple of isoline steps
+  s_viridis,       // colour map the [0 1] range
 }
 transform_curve_t;
 
@@ -213,7 +214,7 @@ static inline void transform_gamutmap(float *in, const transform_gamut_t c)
   }
 }
 
-static inline void transform_curve(const float *tmp, uint8_t *out, const transform_curve_t c)
+static inline void transform_curve(const float *tmp, uint8_t *out, const transform_curve_t c, int cc)
 {
   if(c == s_contrast)
   {
@@ -265,6 +266,19 @@ static inline void transform_curve(const float *tmp, uint8_t *out, const transfo
     const float col = fmaxf(0.0f, (wd - md)/wd);
     for(int k=0;k<3;k++)
       out[k] = CLAMP(255.0f*col, 0, 255.0);
+  }
+  else if(c == s_viridis)
+  {
+    float x = tmp[cc % 3];
+    x = CLAMP(x, 0.0, 1.0);
+    float x2 = x*x, x3 = x2*x, x4 = x2*x2, x5 = x3*x2;
+    const float col[] = {
+      +0.280268003 -0.143510503*x +2.2257938770*x2  -14.815088879*x3 + +25.212752309*x4 -11.772589584*x5,
+      -0.002117546 +1.617109353*x -1.9093050700*x2  +2.701152864 *x3 + -1.685288385 *x4  +0.178738871*x5,
+      +0.300805501 +2.614650302*x -12.019139090*x2 +28.933559110 *x3 + -33.491294770*x4 +13.762053843*x5,
+    };
+    for(int k=0;k<3;k++)
+      out[k] = CLAMP(255.0f*col[k], 0, 255.0);
   }
   else
   {

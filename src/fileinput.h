@@ -292,10 +292,11 @@ static inline int fileinput_grab(fileinput_t *in, const fileinput_conversion_t *
       for(int k=0;k<3;k++) assert(tmp[k] == tmp[k]);
 
       // apply curve
-      transform_curve(tmp, buf+3*idx, c->curve);
+      transform_curve(tmp, buf+3*idx, c->curve, c->channels);
 
       // zero out channels
-      transform_channels(buf+3*idx, c->channels);
+      if(c->curve != s_viridis)
+        transform_channels(buf+3*idx, c->channels);
 
       x += scalex;
       idx++;
